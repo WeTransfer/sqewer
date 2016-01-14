@@ -13,6 +13,6 @@ class ConveyorBelt::ExecutionContext
   end
   
   def logger
-    @params.fetch('conveyor_belt.logger') { ConveyorBelt::NullLogger.instance }
+    @params.fetch('conveyor_belt.logger') { ConveyorBelt::NullLogger }
   end
 end

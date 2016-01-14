@@ -1,6 +1,7 @@
 module ConveyorBelt::CLI
   def self.start(**options_for_worker)
     logger = options_for_worker.fetch(:logger) { Logger.new($stderr) }
+    num_threads = options_for_worker.delete(:num_threads) || ENV['THREADS_PER_WORKER'] || 4
     
     # Use a self-pipe to accumulate signals in a central location
     self_read, self_write = IO.pipe
@@ -14,7 +15,7 @@ module ConveyorBelt::CLI
     
     worker = ConveyorBelt::Worker.new(**options_for_worker)
     begin
-      worker.start
+      worker.start(num_threads: num_threads)
       while (readable_io = IO.select([self_read]))
         signal = readable_io.first[0].gets.strip
         handle_signal(worker, logger, signal)

@@ -22,12 +22,13 @@ class ConveyorBelt::Worker
     @serializer = serializer
     @middleware_stack = middleware_stack
     @execution_context_class = execution_context_class
+    
     @execution_counter = ConveyorBelt::AtomicCounter.new
     
     @state = VeryTinyStateMachine.new(:stopped)
-    @state.permit_state :starting, :running, :stopping, :stopped
+    @state.permit_state :starting, :running, :stopping, :stopped, :failed
     @state.permit_transition :stopped => :starting, :starting => :running, :running => :stopping, :stopping => :stopped
-    @state.permit_transition :starting => :stopped # Failed to start
+    @state.permit_transition :starting => :failed # Failed to start
 
   end
   
@@ -94,7 +95,7 @@ class ConveyorBelt::Worker
     # If any of our threads are already dead, it means there is some misconfiguration and startup failed
     if @threads.any?{|t| !t.alive? }
       @threads.map(&:kill)
-      @state.transition! :stopped
+      @state.transition! :failed
       @logger.fatal { '[worker] Failed to start (one or more threads died on startup)' }
     else
       @state.transition! :running
@@ -127,7 +128,7 @@ class ConveyorBelt::Worker
     
     t = Time.now
     
-    context = @execution_context_class.new('conveyor_belt.connection' => @connection, 'conveyor_belt.worker' => self)
+    context = @execution_context_class.new(context_hash)
     @middleware_stack.around_execution(job, context) do
       job.method(:run).arity.zero? ? job.run : job.run(context)
     end
@@ -150,5 +151,9 @@ class ConveyorBelt::Worker
     @logger.fatal(e.class)
     @logger.fatal(e.message)
     e.backtrace.each { |s| @logger.fatal{"\t#{s}"} }
+  end
+  
+  def context_hash
+    {'conveyor_belt.connection' => @connection, 'conveyor_belt.worker' => self}
   end
 end

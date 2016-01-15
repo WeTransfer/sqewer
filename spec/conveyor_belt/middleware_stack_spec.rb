@@ -41,7 +41,7 @@ describe ConveyorBelt::MiddlewareStack do
   describe '#around_execution' do
     it 'works without any handlers added' do
       stack = described_class.new
-      prepare_result = stack.around_execution(nil) { :prepared }
+      prepare_result = stack.around_execution(nil, nil) { :prepared }
       expect(prepare_result).to eq(:prepared)
     end
     
@@ -59,11 +59,11 @@ describe ConveyorBelt::MiddlewareStack do
       stack << double('Object that does not handle around_execution')
       stack << handler
       
-      result = stack.around_execution(:some_job) { :executed }
+      result = stack.around_execution(:some_job, :some_context) { :executed }
       expect(result).to eq(:executed)
       expect(called).not_to be_empty
       
-      expect(called).to eq([[:some_job], [:some_job], [:some_job]])
+      expect(called).to eq([[:some_job, :some_context], [:some_job, :some_context], [:some_job, :some_context]])
     end
   end
 end

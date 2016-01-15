@@ -22,13 +22,13 @@ class ConveyorBelt::MiddlewareStack
     # TODO: cache the wrapping proc
   end
   
-  def around_execution(job, &inner_block)
+  def around_execution(job, context, &inner_block)
     return yield if @handlers.empty?
     
     responders = @handlers.select{|e| e.respond_to?(:around_execution) }
     responders.reverse.inject(inner_block) {|outer_block, middleware_object|
       ->{ 
-        middleware_object.public_send(:around_execution, job, &outer_block)
+        middleware_object.public_send(:around_execution, job, context, &outer_block)
       }
     }.call
   end

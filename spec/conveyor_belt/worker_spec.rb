@@ -64,4 +64,39 @@ describe ConveyorBelt::Worker, :sqs => true do
       expect(logger_output).to include('Stopping (clean shutdown)')
     end
   end
+  
+  context 'with a job that spawns another job' do
+    it 'sets up the processing pipeline so that jobs can execute in sequence' do
+      class SecondaryJob
+        def run
+          File.open('secondary-job-run','w') {}
+        end
+      end
+      
+      class InitialJob
+        def run(executor)
+          File.open('initial-job-run','w') {}
+          executor.submit!(SecondaryJob.new)
+        end
+      end
+      
+      payload = JSON.dump({job_class: 'InitialJob'})
+      client = Aws::SQS::Client.new
+      client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
+      
+      logger_output = ''
+      logger_to_string = Logger.new(StringIO.new(logger_output))
+      worker = described_class.new(logger: logger_to_string)
+      worker.start(num_threads: 4)
+      
+      sleep 2
+      worker.stop
+      
+      expect(File).to be_exist('initial-job-run')
+      expect(File).to be_exist('secondary-job-run')
+      
+      File.unlink('initial-job-run')
+      File.unlink('secondary-job-run')
+    end
+  end
 end

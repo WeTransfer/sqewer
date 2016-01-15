@@ -132,6 +132,8 @@ class ConveyorBelt::Worker
     @state.in_state?(:stopping)
   end
   
+  STR_logger = 'logger'
+  
   def take_and_execute
     message_id, message_body = @execution_queue.pop(nonblock=true)
     return unless message_id && message_body
@@ -145,19 +147,19 @@ class ConveyorBelt::Worker
     t = Time.now
     
     submitter = @submitter_class.new(@connection, @serializer)
-    context = @execution_context_class.new(submitter)
+    context = @execution_context_class.new(submitter, {STR_logger => @logger})
     
     @middleware_stack.around_execution(job, context) do
       job.method(:run).arity.zero? ? job.run : job.run(context)
     end
     
-    @logger.info "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t)
+    @logger.info { "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t) }
     @connection.delete_message(message_id)
   rescue ThreadError # Queue is empty
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
     Thread.pass
   rescue SystemExit, SignalException, Interrupt => e # Time to quit
-    @logger.error "[worker] Signaled, will quit the consumer"
+    @logger.error { "[worker] Signaled, will quit the consumer" }
     return
   rescue => e # anything else, at or below StandardError that does not need us to quit
     if job

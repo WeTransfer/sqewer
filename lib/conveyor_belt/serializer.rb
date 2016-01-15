@@ -25,8 +25,8 @@ class ConveyorBelt::Serializer
     raise ":job_class not set in the job arguments" unless job_class_name
     
     job_class = Kernel.const_get(job_class_name)
-    job = if message.length > 0
-      job_class.new(**message) # The rest of the message are keyword arguments for the job
+    job = if job_kwargs.length > 0
+      job_class.new(**job_kwargs) # The rest of the message are keyword arguments for the job
     else
       job_class.new # no args
     end

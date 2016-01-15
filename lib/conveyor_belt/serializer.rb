@@ -13,6 +13,9 @@ class ConveyorBelt::Serializer
     @instance ||= new
   end
   
+  AnonymousJobClass = Class.new(StandardError)
+  ArityMismatch = Class.new(ArgumentError)
+  
   # Instantiate a Job object from a message body string. If the
   # returned result is `nil`, the job will be skipped.
   #
@@ -26,7 +29,11 @@ class ConveyorBelt::Serializer
     
     job_class = Kernel.const_get(job_class_name)
     job = if job_kwargs.length > 0
-      job_class.new(**job_kwargs) # The rest of the message are keyword arguments for the job
+      begin
+        job_class.new(**job_kwargs) # The rest of the message are keyword arguments for the job
+      rescue ArgumentError => e
+        raise ArityMismatch, "Could not instantiate #{job_class} because it did not accept the arguments #{job_kwargs.inspect}"
+      end
     else
       job_class.new # no args
     end
@@ -37,7 +44,15 @@ class ConveyorBelt::Serializer
   # @param job[#to_h] an object that supports `to_h`
   # @return [String] serialized string ready to be put into the queue
   def serialize(job)
-    job_ticket_hash = {job_class: job.class.to_s}.merge!(job.to_h)
+    job_class_name = job.class.to_s
+    
+    begin
+      Kernel.const_get(job_class_name)
+    rescue NameError
+      raise AnonymousJobClass, "The class of #{job.inspect} could not be resolved and will not restore to a Job"
+    end
+    
+    job_ticket_hash = {job_class: job_class_name}.merge!(job.to_h)
     JSON.pretty_generate(job_ticket_hash)
   end
 end

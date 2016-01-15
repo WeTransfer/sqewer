@@ -7,11 +7,12 @@ require 'logger'
 class ConveyorBelt::ExecutionContext
   # Create a new ExecutionContext with an environment hash.
   #
-  # @param connection[ConveyorBelt::Connection] the connection to the queue the job can submit from
   # @param submitter[ConveyorBelt::Submitter] the object to submit new jobs through. Used when jobs want to submit jobs
-  def initialize(submitter)
-    @params = {}
+  # @param extra_variables[Hash] any extra data to pass around to each Job
+  def initialize(submitter, extra_variables={})
     @submitter = submitter
+    @params = {}
+    extra_variables.each_pair{|k, v| self[k]  = v }
   end
   
   # Submits one or more jobs to the queue

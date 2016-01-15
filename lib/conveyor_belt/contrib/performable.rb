@@ -12,7 +12,7 @@ module ConveyorBelt
       end
       
       def inspect
-        '<%s{%s}' % [@class, @args.inspect]
+        '<%s{%s}>' % [@class, @args.inspect]
       end
       
       def run(context)

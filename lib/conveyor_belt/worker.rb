@@ -107,6 +107,14 @@ class ConveyorBelt::Worker
   def stop
     @state.transition! :stopping
     @logger.info { '[worker] Stopping (clean shutdown), will wait for threads to terminate'}
+    @threads.map(&:join)
+    @logger.info { '[worker] Stopped'}
+    @state.transition! :stopped
+  end
+  
+  def kill
+    @state.transition! :stopping
+    @logger.info { '[worker] Killing (unclean shutdown), will kill all threads'}
     @threads.map(&:kill)
     @logger.info { '[worker] Stopped'}
     @state.transition! :stopped
@@ -120,6 +128,7 @@ class ConveyorBelt::Worker
   
   def take_and_execute
     message_id, message_body = @execution_queue.pop(nonblock=true)
+    return unless message_id && message_body
     
     job = @middleware_stack.around_deserialization(@serializer, message_id, message_body) do
       @serializer.unserialize(message_body)

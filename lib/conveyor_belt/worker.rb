@@ -11,10 +11,12 @@ class ConveyorBelt::Worker
   
   # @param connection[ConveyorBelt::Connection] the object that handles polling and submitting
   # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
-  # @param execution_context[Class] the Ruby class that is going to be instantiated for each job execution
+  # @param execution_context_class[Class] the Ruby class that is going to be instantiated for each job execution
+  # @param submitter_class[Class] the class that is going to be instantiated for submitting jobs from within other jobs
   def initialize(connection: ConveyorBelt::Connection.default,
       serializer: ConveyorBelt::Serializer.default,
       execution_context_class: ConveyorBelt::ExecutionContext,
+      submitter_class: ConveyorBelt::Submitter,
       middleware_stack: ConveyorBelt::MiddlewareStack.default,
       logger: Logger.new($stderr))
     
@@ -23,6 +25,7 @@ class ConveyorBelt::Worker
     @serializer = serializer
     @middleware_stack = middleware_stack
     @execution_context_class = execution_context_class
+    @submitter_class = submitter_class
     
     @execution_counter = ConveyorBelt::AtomicCounter.new
     
@@ -43,7 +46,7 @@ class ConveyorBelt::Worker
     
     Thread.abort_on_exception = true
 
-    @logger.info { '[worker] Starting with %d consumer thread' % num_threads }
+    @logger.info { '[worker] Starting with %d consumer threads' % num_threads }
     @execution_queue = Queue.new
     
     consumers = (1..num_threads).map do
@@ -60,9 +63,12 @@ class ConveyorBelt::Worker
     # to "suspend" the polling loop in the SQS client when the local buffer queue fills up.
     provider = Thread.new do
       feeder_fiber = Fiber.new do
-        @connection.poll do |message_id, message_body| 
+        loop do
           break if @state.in_state?(:stopping)
-          Fiber.yield([message_id, message_body])
+          @connection.poll do |message_id, message_body| 
+            break if @state.in_state?(:stopping)
+            Fiber.yield([message_id, message_body])
+          end
         end
       end
       
@@ -100,7 +106,7 @@ class ConveyorBelt::Worker
       @logger.fatal { '[worker] Failed to start (one or more threads died on startup)' }
     else
       @state.transition! :running
-      @logger.info { '[worker] Started, %d threads total including utilities' % @threads.length }
+      @logger.info { '[worker] Started, %d consumer threads' % consumers.length }
     end
   end
   
@@ -138,7 +144,9 @@ class ConveyorBelt::Worker
     
     t = Time.now
     
-    context = @execution_context_class.new(context_hash)
+    submitter = @submitter_class.new(@connection, @serializer)
+    context = @execution_context_class.new(submitter)
+    
     @middleware_stack.around_execution(job, context) do
       job.method(:run).arity.zero? ? job.run : job.run(context)
     end

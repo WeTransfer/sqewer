@@ -5,16 +5,26 @@ require 'logger'
 # at the things specific for the execution context (database/key-value store
 # connections, error handling transaction and so on).
 class ConveyorBelt::ExecutionContext
-  NullLogger = Class.new(Logger).new(nil)
-  
-  def initialize(params)
-    @params = HashTools.indifferent(params.to_h)
-    @params['submitter'] = ConveyorBelt::Submitter.new(params.fetch('connection'), params.fetch('serializer'))
+  # Create a new ExecutionContext with an environment hash.
+  #
+  # @param connection[ConveyorBelt::Connection] the connection to the queue the job can submit from
+  # @param submitter[ConveyorBelt::Submitter] the object to submit new jobs through. Used when jobs want to submit jobs
+  def initialize(submitter)
+    @params = {}
+    @submitter = submitter
   end
   
   # Submits one or more jobs to the queue
   def submit!(*jobs, **execution_options)
-    @params.fetch('submitter').submit!(*jobs, **execution_options)
+    @submitter.submit!(*jobs, **execution_options)
+  end
+  
+  # Sets a key in the execution environment
+  #
+  # @param key[#to_s] the key to set
+  # @param value the value to set
+  def []=(key, value)
+    @params[key.to_s] = value
   end
   
   # Returns a key of the execution environment by name

@@ -27,13 +27,13 @@ module ConveyorBelt::CLI
   end
   
   def self.handle_signal(worker, logger, sig)
-    logger.info { "Got #{sig}" }
     case sig
     when 'USR1'
       logger.info { 'Received USR1, doing a soft shutdown' }
       worker.stop
       exit 0
     else
+      logger.warn { 'Got %s, interrupt' % sig }
       raise Interrupt
     end
       

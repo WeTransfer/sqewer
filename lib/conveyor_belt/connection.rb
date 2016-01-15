@@ -6,15 +6,20 @@
 # * no message should be deleted if the receiving client has not deleted it explicitly
 # * any execution that ends with an exception should cause the message to be re-enqueued
 class ConveyorBelt::Connection
-  DEFAULT_TIMEOUT_SECONDS = 1
+  DEFAULT_TIMEOUT_SECONDS = 5
+  BATCH_RECEIVE_SIZE = 10
   
   # Returns the default adapter, connected to the queue set via the `SQS_QUEUE_URL`
   # environment variable.
   def self.default
     new(ENV.fetch('SQS_QUEUE_URL'))
+  rescue KeyError => e
+    raise "SQS_QUEUE_URL not set in the environment. This is the queue URL that the default that ConveyorBelt uses"
   end
   
   # Initializes a new adapter, with access to the SQS queue at the given URL.
+  #
+  # @param queue_url[String] the SQS queue URL (the URL can be copied from your AWS console)
   def initialize(queue_url)
     require 'aws-sdk'
     @queue_url = queue_url
@@ -29,8 +34,13 @@ class ConveyorBelt::Connection
     poller = ::Aws::SQS::QueuePoller.new(@queue_url)
     # SDK v2 automatically deletes messages if the block returns normally, but we want it to happen manually
     # from the caller.
-    poller.poll(skip_delete: true, idle_timeout: timeout.to_i, wait_time_seconds: timeout.to_i) do | sqs_message |
-      yield [sqs_message.receipt_handle, sqs_message.body]
+    poller.poll(max_number_of_messages: BATCH_RECEIVE_SIZE, skip_delete: true, 
+      idle_timeout: timeout.to_i, wait_time_seconds: timeout.to_i) do | sqs_messages |
+      
+      sqs_messages.each do | sqs_message |
+        yield [sqs_message.receipt_handle, sqs_message.body]
+      end
+    
     end
   end
   

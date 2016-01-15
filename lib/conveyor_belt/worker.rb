@@ -7,6 +7,7 @@ require 'fiber'
 class ConveyorBelt::Worker
   DEFAULT_NUM_THREADS = 4
   SLEEP_SECONDS_ON_EMPTY_QUEUE = 1
+  THROTTLE_FACTOR = 2
   
   # @param connection[ConveyorBelt::Connection] the object that handles polling and submitting
   # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
@@ -69,11 +70,11 @@ class ConveyorBelt::Worker
         break if !feeder_fiber.alive?
         break if stopping?
         
-        if @execution_queue.length < num_threads
+        if @execution_queue.length < (num_threads * THROTTLE_FACTOR)
           @execution_queue << feeder_fiber.resume
         else
           @logger.debug "Suspending poller (%d items buffered)" % @execution_queue.length
-          sleep 0.5
+          sleep 0.2
           Thread.pass
         end 
       end
@@ -134,7 +135,7 @@ class ConveyorBelt::Worker
     end
     
     @logger.info "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t)
-    @connection.delete_message(sqs_message)
+    @connection.delete_message(message_id)
   rescue ThreadError # Queue is empty
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
     Thread.pass

@@ -16,6 +16,7 @@ class ConveyorBelt::Connection
   
   # Initializes a new adapter, with access to the SQS queue at the given URL.
   def initialize(queue_url)
+    require 'aws-sdk'
     @queue_url = queue_url
   end
   
@@ -25,7 +26,7 @@ class ConveyorBelt::Connection
   # @yield [String, String] the receipt identifier and contents of the message body
   # @return [void]
   def poll(timeout = DEFAULT_TIMEOUT_SECONDS)
-    poller = Aws::SQS::QueuePoller.new(@queue_url)
+    poller = ::Aws::SQS::QueuePoller.new(@queue_url)
     # SDK v2 automatically deletes messages if the block returns normally, but we want it to happen manually
     # from the caller.
     poller.poll(skip_delete: true, idle_timeout: timeout.to_i, wait_time_seconds: timeout.to_i) do | sqs_message |
@@ -40,7 +41,7 @@ class ConveyorBelt::Connection
   # Passes the arguments to the AWS SDK. 
   # @return [void]
   def send_message(message_body, **kwargs_for_send)
-    client = Aws::SQS::Client.new
+    client = ::Aws::SQS::Client.new
     client.send_message(queue_url: @queue_url, message_body: message_body, **kwargs_for_send)
   end
   
@@ -49,7 +50,7 @@ class ConveyorBelt::Connection
   # @param message_identifier[String] the ID of the message to delete. For SQS, it is the receipt handle
   # @return [void]
   def delete_message(message_identifier)
-    client = Aws::SQS::Client.new
+    client = ::Aws::SQS::Client.new
     client.delete_message(queue_url: @queue_url, receipt_handle: message_identifier)
   end
 end

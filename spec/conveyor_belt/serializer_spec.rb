@@ -14,6 +14,14 @@ describe ConveyorBelt::Serializer do
   end
   
   describe '#serialize' do
+    
+    it 'serializes a Job that has no to_h support without its kwargs' do
+      class JobWithoutToHash
+      end
+      job = JobWithoutToHash.new
+      expect(described_class.new.serialize(job)).to eq("{\n  \"job_class\": \"JobWithoutToHash\"\n}")
+    end
+    
     it 'serializes a Struct along with its members and the class name' do
       class SomeJob < Struct.new :one, :two
       end

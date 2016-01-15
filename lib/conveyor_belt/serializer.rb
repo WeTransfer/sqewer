@@ -52,7 +52,8 @@ class ConveyorBelt::Serializer
       raise AnonymousJobClass, "The class of #{job.inspect} could not be resolved and will not restore to a Job"
     end
     
-    job_ticket_hash = {job_class: job_class_name}.merge!(job.to_h)
+    hash_form = job.respond_to?(:to_h) ? job.to_h : {}
+    job_ticket_hash = {job_class: job_class_name}.merge!(hash_form)
     JSON.pretty_generate(job_ticket_hash)
   end
 end

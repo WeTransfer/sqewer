@@ -11,8 +11,25 @@ Dotenv.load
 
 require 'aws-sdk'
 
+module Polling
+  # Call the given block every N seconds, and return once the
+  # block returns a truthy value. If it still did not return
+  # the value after fail_after, fail the spec.
+  def poll(every: 0.5, fail_after:, &check_block)
+    started_polling = Time.now
+    loop do
+      return if check_block.call
+      sleep(every)
+      if (Time.now - started_polling) > fail_after
+        fail "Waited for #{fail_after} seconds for the operation to complete but it didnt"
+      end
+    end
+  end
+end
+
 RSpec.configure do |config| 
   config.order = 'random'
+  config.include Polling
   
   config.around :each do | example |
     if example.metadata[:sqs]

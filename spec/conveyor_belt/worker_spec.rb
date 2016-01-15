@@ -89,14 +89,16 @@ describe ConveyorBelt::Worker, :sqs => true do
       worker = described_class.new(logger: logger_to_string)
       worker.start(num_threads: 4)
       
-      sleep 2
-      worker.stop
-      
-      expect(File).to be_exist('initial-job-run')
-      expect(File).to be_exist('secondary-job-run')
-      
-      File.unlink('initial-job-run')
-      File.unlink('secondary-job-run')
+      begin
+        poll(fail_after: 3) { File.exist?('initial-job-run') }
+        poll(fail_after: 3) { File.exist?('secondary-job-run') }
+        
+        File.unlink('initial-job-run')
+        File.unlink('secondary-job-run')
+        expect(true).to eq(true)
+      ensure
+        worker.stop
+      end
     end
   end
 end

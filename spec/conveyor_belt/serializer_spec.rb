@@ -1,6 +1,18 @@
 require_relative '../spec_helper'
 
 describe ConveyorBelt::Serializer do
+  describe '.default' do
+    it 'returns the same Serializer instance' do
+      instances = (1..1000).map{ described_class.default }
+      instances.uniq!
+      expect(instances).to be_one
+      
+      the_instance = instances[0]
+      expect(the_instance).to respond_to(:serialize)
+      expect(the_instance).to respond_to(:unserialize)
+    end
+  end
+  
   describe '#serialize' do
     it 'serializes a Struct along with its members and the class name' do
       class SomeJob < Struct.new :one, :two

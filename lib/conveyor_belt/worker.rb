@@ -110,6 +110,8 @@ class ConveyorBelt::Worker
     end
   end
   
+  # Attempts to softly stop the running consumers and the producer. Once the call is made,
+  # all the threads will stop at their next loop iteration.
   def stop
     @state.transition! :stopping
     @logger.info { '[worker] Stopping (clean shutdown), will wait for threads to terminate'}
@@ -118,6 +120,7 @@ class ConveyorBelt::Worker
     @state.transition! :stopped
   end
   
+  # Peforms a hard shutdown by killing all the threads
   def kill
     @state.transition! :stopping
     @logger.info { '[worker] Killing (unclean shutdown), will kill all threads'}
@@ -132,7 +135,6 @@ class ConveyorBelt::Worker
     @state.in_state?(:stopping)
   end
   
-  STR_logger = 'logger'
   
   def take_and_execute
     message_id, message_body = @execution_queue.pop(nonblock=true)
@@ -173,7 +175,5 @@ class ConveyorBelt::Worker
     e.backtrace.each { |s| @logger.fatal{"\t#{s}"} }
   end
   
-  def context_hash
-    {'conveyor_belt.connection' => @connection, 'conveyor_belt.worker' => self}
-  end
+  STR_logger = 'logger'
 end

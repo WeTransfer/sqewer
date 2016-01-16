@@ -22,20 +22,25 @@ class ConveyorBelt::Serializer
   # @param message_body[String] a string in JSON containing the job parameters
   # @return [#run, NilClass] an object that responds to `run()` or nil.
   def unserialize(message_body)
-    job_kwargs = JSON.parse(message_body, symbolize_names: true)
-    # Use fetch() to raise a descriptive KeyError if none
-    job_class_name = job_kwargs.delete(:job_class)
-    raise ":job_class not set in the job arguments" unless job_class_name
+    job_ticket_hash = JSON.parse(message_body, symbolize_names: true)
+    raise "Job ticket must unmarshal into a Hash" unless job_ticket_hash.is_a?(Hash)
     
+    job_ticket_hash = convert_old_ticket_format(job_ticket_hash) if job_ticket_hash[:job_class]
+    
+    # Use fetch() to raise a descriptive KeyError if none
+    job_class_name = job_ticket_hash.delete(:_job_class)
+    raise ":_job_class not set in the ticket" unless job_class_name
     job_class = Kernel.const_get(job_class_name)
-    job = if job_kwargs.length > 0
-      begin
-        job_class.new(**job_kwargs) # The rest of the message are keyword arguments for the job
-      rescue ArgumentError => e
-        raise ArityMismatch, "Could not instantiate #{job_class} because it did not accept the arguments #{job_kwargs.inspect}"
-      end
-    else
+    
+    job_params = job_ticket_hash.delete(:_job_params)
+    if job_params.nil? || job_params.empty?
       job_class.new # no args
+    else
+      begin
+        job_class.new(**job_params) # The rest of the message are keyword arguments for the job
+      rescue ArgumentError => e
+        raise ArityMismatch, "Could not instantiate #{job_class} because it did not accept the arguments #{job_params.inspect}"
+      end
     end
   end
   
@@ -52,8 +57,15 @@ class ConveyorBelt::Serializer
       raise AnonymousJobClass, "The class of #{job.inspect} could not be resolved and will not restore to a Job"
     end
     
-    hash_form = job.respond_to?(:to_h) ? job.to_h : {}
-    job_ticket_hash = {job_class: job_class_name}.merge!(hash_form)
-    JSON.pretty_generate(job_ticket_hash)
+    job_params = job.respond_to?(:to_h) ? job.to_h : nil
+    job_ticket_hash = {_job_class: job_class_name, _job_params: job_params}
+    JSON.dump(job_ticket_hash)
+  end
+  
+  private
+  
+  def convert_old_ticket_format(hash_of_properties)
+    job_class = hash_of_properties.delete(:job_class)
+    {_job_class: job_class, _job_params: hash_of_properties}
   end
 end

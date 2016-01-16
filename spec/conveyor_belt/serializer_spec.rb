@@ -19,7 +19,7 @@ describe ConveyorBelt::Serializer do
       class JobWithoutToHash
       end
       job = JobWithoutToHash.new
-      expect(described_class.new.serialize(job)).to eq("{\n  \"job_class\": \"JobWithoutToHash\"\n}")
+      expect(described_class.new.serialize(job)).to eq("{\"_job_class\":\"JobWithoutToHash\",\"_job_params\":null}")
     end
     
     it 'serializes a Struct along with its members and the class name' do
@@ -28,7 +28,7 @@ describe ConveyorBelt::Serializer do
       
       job = SomeJob.new(123, [456])
       
-      expect(described_class.new.serialize(job)).to eq("{\n  \"job_class\": \"SomeJob\",\n  \"one\": 123,\n  \"two\": [\n    456\n  ]\n}")
+      expect(described_class.new.serialize(job)).to eq("{\"_job_class\":\"SomeJob\",\"_job_params\":{\"one\":123,\"two\":[456]}}")
     end
     
     it 'raises an exception if the object is of an anonymous class' do
@@ -38,6 +38,23 @@ describe ConveyorBelt::Serializer do
         described_class.new.serialize(o)
       }.to raise_error(described_class::AnonymousJobClass)
     end
+  end
+  
+  it 'is able to roundtrip a job with a parameter' do
+    require 'ks'
+    
+    class LeJob < Ks.strict(:some_data)
+    end
+  
+    job = LeJob.new(some_data: 123)
+  
+    subject = described_class.new
+  
+    serialized = subject.serialize(job)
+    restored = subject.unserialize(serialized)
+  
+    expect(restored).to be_kind_of(LeJob)
+    expect(restored.some_data).to eq(123)
   end
   
   describe '#unserialize' do

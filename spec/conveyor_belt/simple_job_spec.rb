@@ -51,7 +51,7 @@ describe ConveyorBelt::SimpleJob do
     expect(new_instance.bar).to eq(2)
     
     hash_repr = new_instance.to_h
-    expect(hash_repr).to eq({job_class: string_repr, foo: 1, bar: 2})
+    expect(hash_repr).to eq({foo: 1, bar: 2})
   end
   
   

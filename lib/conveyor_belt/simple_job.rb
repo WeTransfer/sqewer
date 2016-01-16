@@ -72,6 +72,6 @@ module ConveyorBelt::SimpleJob
       h[k] = send(k)
     end
     
-    {job_class: self.class.to_s}.merge(keys_and_values)
+    keys_and_values
   end
 end

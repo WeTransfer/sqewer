@@ -2,9 +2,7 @@ Conveyor Belt is an SQS based queue processor.
 
 ## The shortest introduction possible
 
-In your environment, set `SQS_QUEUE_URL`.
-
-Define a job class:
+In your environment, set `SQS_QUEUE_URL`. Then, define a job class:
 
     class MyJob
       def run

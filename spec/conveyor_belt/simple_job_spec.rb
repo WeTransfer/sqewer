@@ -35,6 +35,7 @@ describe ConveyorBelt::SimpleJob do
     job = example_class.new(foo: 1, bar: 2)
     expect(job.inspect).to include('Class')
     expect(job.inspect).to include('{:foo=>1}')
+    expect(job.inspect).not_to include('bar')
   end
   
   it 'provides for a keyword argument constructor and a to_h method' do

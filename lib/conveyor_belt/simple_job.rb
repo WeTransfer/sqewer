@@ -1,8 +1,9 @@
 # A module that you can include into your Job class.
 # It adds the following features:
+#
+# * initialize() will have keyword access to all accessors, and will ensure you have called each one of them
 # * to_h() will produce a symbolized Hash with all the properties defined using attr_accessor, and the job_class_name
 # * inspect() will provide a sensible default string representation for logging
-# * logger() will allow access to the logger of the executor passed to run()
 module ConveyorBelt::SimpleJob
   UnknownJobAttribute = Class.new(StandardError)
   MissingAttribute = Class.new(StandardError)
@@ -24,16 +25,16 @@ module ConveyorBelt::SimpleJob
   # ones returned in the inspection string.
   #
   #     j = SomeJob.new(retries: 4, param: 'a')
-  #     j.inspect #=> "<SomeJob:{retries: 4, param: \"a\"}"
+  #     j.inspect #=> "<SomeJob:{retries: 4, param: \"a\"}>"
   #
-  # @return [String] the array of attributes to show via inspect 
+  # @return [String] the object inspect string
   def inspect
     key_attrs = inspectable_attributes
     hash_repr = to_h
     h = key_attrs.each_with_object({}) do |k, o|
       o[k] = hash_repr[k]
     end
-    "#{self.class}:#{h.inspect}"
+    "<#{self.class}:#{h.inspect}>"
   end
   
   # Initializes a new Job with the given job args. Will check for presence of

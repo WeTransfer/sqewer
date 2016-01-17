@@ -1,4 +1,4 @@
-A more in-depth explanation of the systems below
+A more in-depth explanation of the systems below.
 
 ## Job storage
 
@@ -85,7 +85,8 @@ conform to the job serialization format used internally. For example, you can ha
 
     class CustomSerializer < ConveyorBelt::Serializer
       # Overridden so that we can instantiate a custom job
-      # from the AWS notification payload
+      # from the AWS notification payload.
+      # Return "nil" and the job will be simply deleted from the queue
       def unserialize(message_blob)
         message = JSON.load(message_blob)
         return if message['Service'] # AWS test
@@ -105,6 +106,9 @@ Or you can override the serialization method to add some metadata to the job tic
         JSON.dump(parsed)
       end
     end
+
+If you return `nil` from your `unserialize` method the job will not be executed,
+but will just be deleted from the SQS queue.
 
 ## Starting and running the worker
 
@@ -140,3 +144,27 @@ S3 bucket notifications coming into the same queue):
 
 The `ConveyorBelt::CLI` module that you run from the commandline handler application accepts the
 same options as the `Worker` constructor, so everything stays configurable.
+
+## Execution and serialization wrappers (middleware)
+
+You can wrap job processing in middleware. A full-featured middleware class looks like this:
+
+    class MyWrapper
+      # Surrounds the job instantiation from the string coming from SQS.
+      def around_deserialization(serializer, msg_id, msg_payload)
+        # msg_id is the receipt handle, msg_payload is the message body string
+        yield
+      end
+      
+      # Surrounds the actual job execution
+      def around_execution(job, context)
+        # job is the actual job you will be running, context is the ExecutionContext.
+        yield
+      end
+    end
+
+You need to set up a `MiddlewareStack` and supply it to the `Worker` when instantiating:
+
+    stack = ConveyorBelt::MiddlewareStack.new
+    stack << MyWrapper.new
+    w = ConveyorBelt::Worker.new(middleware_stack: stack)

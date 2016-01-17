@@ -2,14 +2,15 @@ $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 
 require 'rspec'
-#require 'simplecov'
-#SimpleCov.start
+require 'simplecov'
 
-require 'conveyor_belt'
 require 'dotenv'
 Dotenv.load
 
 require 'aws-sdk'
+
+SimpleCov.start
+require 'conveyor_belt'
 
 module Polling
   # Call the given block every N seconds, and return once the

@@ -9,6 +9,7 @@ group :development do
   gem 'dotenv'
   gem 'rake'
   gem "rspec", "~> 3.2.0"
+  gem 'simplecov', :require => false
 #  gem "autospec" -> I would love to have this, but it wants capybara-webkit too :-(
   gem "rdoc", "~> 3.12"
   gem "bundler", "~> 1.0"

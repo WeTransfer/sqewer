@@ -4,9 +4,7 @@ A more in-depth explanation of the systems below
 
 Jobs are (by default) stored in SQS as JSON blobs. A very simple job ticket looks like this:
 
-    {
-      "job_class": "MyJob"
-    }
+    {"_job_class": "MyJob", "_job_params": null}
 
 When this ticket is being picked up by the worker, the worker will do the following:
 
@@ -54,7 +52,7 @@ A job submitting a subsequent job could look like this:
 
 ## Job submission
 
-In general, a job object that can be submitted must return a Hash from it's `to_h` method. The hash must
+In general, a job object that needs some arguments for instantiation must return a Hash from it's `to_h` method. The hash must
 include all the keyword arguments needed to instantiate the job when executing. For example:
 
     class SendMail
@@ -76,6 +74,35 @@ Or if you are using `ks` gem (https://rubygems.org/gems/ks) you could inherit yo
     class SendMail < Ks.strict(:to, :body)
       def run
         ...
+      end
+    end
+
+## Job marshaling
+
+By default, the jobs are converted to JSON and back from JSON using the ConveyorBelt::Serializer object. You can
+override that object if you need to handle job tickets that come from external sources and do not necessarily
+conform to the job serialization format used internally. For example, you can handle S3 bucket notifications:
+
+    class CustomSerializer < ConveyorBelt::Serializer
+      # Overridden so that we can instantiate a custom job
+      # from the AWS notification payload
+      def unserialize(message_blob)
+        message = JSON.load(message_blob)
+        return if message['Service'] # AWS test
+        return HandleS3Notification.new(message) if message['Records']
+        
+        super # as default
+      end
+    end
+
+Or you can override the serialization method to add some metadata to the job ticket on job submission:
+
+    class CustomSerializer < ConveyorBelt::Serializer
+      def serialize(job_object)
+        json_blob = super
+        parsed = JSON.load(json_blob)
+        parsed['_submitter_host'] = Socket.gethostname
+        JSON.dump(parsed)
       end
     end
 

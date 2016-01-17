@@ -18,7 +18,8 @@ class ConveyorBelt::Worker
       execution_context_class: ConveyorBelt::ExecutionContext,
       submitter_class: ConveyorBelt::Submitter,
       middleware_stack: ConveyorBelt::MiddlewareStack.default,
-      logger: Logger.new($stderr))
+      logger: Logger.new($stderr),
+      num_threads: DEFAULT_NUM_THREADS)
     
     @logger = logger
     @connection = connection
@@ -26,6 +27,9 @@ class ConveyorBelt::Worker
     @middleware_stack = middleware_stack
     @execution_context_class = execution_context_class
     @submitter_class = submitter_class
+    @num_threads = num_threads
+    
+    raise ArgumentError, "num_threads must be > 0" unless num_threads > 0
     
     @execution_counter = ConveyorBelt::AtomicCounter.new
     
@@ -33,23 +37,21 @@ class ConveyorBelt::Worker
     @state.permit_state :starting, :running, :stopping, :stopped, :failed
     @state.permit_transition :stopped => :starting, :starting => :running, :running => :stopping, :stopping => :stopped
     @state.permit_transition :starting => :failed # Failed to start
-
   end
   
   # Start listening on the queue, spin up a number of consumer threads that will execute the jobs.
   #
   # @param num_threads[Fixnum] the number of consumer/executor threads to spin up
   # @return [void]
-  def start(num_threads: DEFAULT_NUM_THREADS)
-    raise ArgumentError, "num_threads must be > 0" unless num_threads > 0
+  def start
     @state.transition! :starting
     
     Thread.abort_on_exception = true
 
-    @logger.info { '[worker] Starting with %d consumer threads' % num_threads }
+    @logger.info { '[worker] Starting with %d consumer threads' % @num_threads }
     @execution_queue = Queue.new
     
-    consumers = (1..num_threads).map do
+    consumers = (1..@num_threads).map do
       Thread.new do
         loop { 
           break if @state.in_state?(:stopping)
@@ -76,7 +78,7 @@ class ConveyorBelt::Worker
         break if !feeder_fiber.alive?
         break if stopping?
         
-        if @execution_queue.length < (num_threads * THROTTLE_FACTOR)
+        if @execution_queue.length < (@num_threads * THROTTLE_FACTOR)
           @execution_queue << feeder_fiber.resume
         else
           @logger.debug "Suspending poller (%d items buffered)" % @execution_queue.length
@@ -92,7 +94,7 @@ class ConveyorBelt::Worker
     gc = Thread.new do
       loop do
         break if stopping?
-        GC.start if (@execution_counter.to_i % num_threads).zero?
+        GC.start if (@execution_counter.to_i % @num_threads).zero?
         sleep 0.5
       end
     end

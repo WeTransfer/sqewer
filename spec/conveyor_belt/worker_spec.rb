@@ -10,11 +10,9 @@ describe ConveyorBelt::Worker, :sqs => true do
   
   it 'can go through the full cycle of initialize, start, stop, start, stop' do
     worker = described_class.new(logger: silent_logger)
-    worker.start(num_threads: 4)
-    sleep 2
+    worker.start
     worker.stop
     worker.start
-    sleep 1
     worker.stop
   end
   
@@ -35,7 +33,7 @@ describe ConveyorBelt::Worker, :sqs => true do
     
       worker = described_class.new(logger: logger_to_string)
       
-      worker.start(num_threads: 4)
+      worker.start
       sleep 2
       worker.stop
       
@@ -56,7 +54,7 @@ describe ConveyorBelt::Worker, :sqs => true do
     
       worker = described_class.new(logger: logger_to_string)
       
-      worker.start(num_threads: 4)
+      worker.start
       sleep 2
       worker.stop
       
@@ -86,8 +84,9 @@ describe ConveyorBelt::Worker, :sqs => true do
       
       logger_output = ''
       logger_to_string = Logger.new(StringIO.new(logger_output))
-      worker = described_class.new(logger: logger_to_string)
-      worker.start(num_threads: 4)
+      worker = described_class.new(logger: logger_to_string, num_threads: 8)
+      
+      worker.start
       
       begin
         poll(fail_after: 3) { File.exist?('initial-job-run') }

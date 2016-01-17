@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Julik Tarkhanov"]
-  s.date = "2016-01-16"
+  s.date = "2016-01-17"
   s.description = "Process jobs from SQS"
   s.email = "me@julik.nl"
   s.extra_rdoc_files = [
@@ -19,11 +19,13 @@ Gem::Specification.new do |s|
   ]
   s.files = [
     ".gitlab-ci.yml",
+    ".yardopts",
     "DETAILS.md",
     "FAQ.md",
     "Gemfile",
     "README.md",
     "Rakefile",
+    "conveyor_belt.gemspec",
     "example.env",
     "lib/conveyor_belt.rb",
     "lib/conveyor_belt/atomic_counter.rb",
@@ -32,6 +34,7 @@ Gem::Specification.new do |s|
     "lib/conveyor_belt/contrib/appsignal_wrapper.rb",
     "lib/conveyor_belt/contrib/performable.rb",
     "lib/conveyor_belt/execution_context.rb",
+    "lib/conveyor_belt/isolator.rb",
     "lib/conveyor_belt/middleware_stack.rb",
     "lib/conveyor_belt/null_logger.rb",
     "lib/conveyor_belt/serializer.rb",
@@ -49,6 +52,7 @@ Gem::Specification.new do |s|
     "spec/conveyor_belt/simple_job_spec.rb",
     "spec/conveyor_belt/submitter_spec.rb",
     "spec/conveyor_belt/worker_spec.rb",
+    "spec/conveyor_belt_spec.rb",
     "spec/spec_helper.rb"
   ]
   s.homepage = "https://gitlab.wetransfer.net/julik/conveyor_belt"
@@ -61,35 +65,41 @@ Gem::Specification.new do |s|
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<aws-sdk>, ["~> 2"])
-      s.add_runtime_dependency(%q<ks>, [">= 0"])
       s.add_runtime_dependency(%q<very_tiny_state_machine>, ["~> 1"])
       s.add_runtime_dependency(%q<hash_tools>, [">= 0"])
+      s.add_runtime_dependency(%q<exceptional_fork>, [">= 0"])
+      s.add_development_dependency(%q<ks>, [">= 0"])
       s.add_development_dependency(%q<dotenv>, [">= 0"])
       s.add_development_dependency(%q<rake>, [">= 0"])
       s.add_development_dependency(%q<rspec>, ["~> 3.2.0"])
+      s.add_development_dependency(%q<simplecov>, [">= 0"])
       s.add_development_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_development_dependency(%q<bundler>, ["~> 1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 2.0.1"])
     else
       s.add_dependency(%q<aws-sdk>, ["~> 2"])
-      s.add_dependency(%q<ks>, [">= 0"])
       s.add_dependency(%q<very_tiny_state_machine>, ["~> 1"])
       s.add_dependency(%q<hash_tools>, [">= 0"])
+      s.add_dependency(%q<exceptional_fork>, [">= 0"])
+      s.add_dependency(%q<ks>, [">= 0"])
       s.add_dependency(%q<dotenv>, [">= 0"])
       s.add_dependency(%q<rake>, [">= 0"])
       s.add_dependency(%q<rspec>, ["~> 3.2.0"])
+      s.add_dependency(%q<simplecov>, [">= 0"])
       s.add_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_dependency(%q<bundler>, ["~> 1.0"])
       s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
     end
   else
     s.add_dependency(%q<aws-sdk>, ["~> 2"])
-    s.add_dependency(%q<ks>, [">= 0"])
     s.add_dependency(%q<very_tiny_state_machine>, ["~> 1"])
     s.add_dependency(%q<hash_tools>, [">= 0"])
+    s.add_dependency(%q<exceptional_fork>, [">= 0"])
+    s.add_dependency(%q<ks>, [">= 0"])
     s.add_dependency(%q<dotenv>, [">= 0"])
     s.add_dependency(%q<rake>, [">= 0"])
     s.add_dependency(%q<rspec>, ["~> 3.2.0"])
+    s.add_dependency(%q<simplecov>, [">= 0"])
     s.add_dependency(%q<rdoc>, ["~> 3.12"])
     s.add_dependency(%q<bundler>, ["~> 1.0"])
     s.add_dependency(%q<jeweler>, ["~> 2.0.1"])

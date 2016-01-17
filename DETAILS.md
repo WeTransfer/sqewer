@@ -28,6 +28,16 @@ the worker will instantiate your `MyJob` class with the `ids:` keyword argument:
     job = MyJob.new(ids: [1,2,3])
     job.run
 
+Note that at this point only arguments that are raw JSON types are supported:
+
+* Hash
+* Array
+* Numeric
+* String
+* nil/false/true
+
+If you need marshalable Ruby types there instead, you might need to implement a custom `Serializer.`
+
 ## Jobs spawning dependent jobs
 
 If your `run` method on the job object accepts arguments (has non-zero `arity` ) the `ExecutionContext` will

@@ -157,11 +157,13 @@ class ConveyorBelt::Worker
       job = @middleware_stack.around_deserialization(@serializer, message_id, message_body) do
         @serializer.unserialize(message_body)
       end
-    
+      
+      return unless job # if the serializer returns a nil or false
+      
       t = Time.now
       submitter = @submitter_class.new(@connection, @serializer)
       context = @execution_context_class.new(submitter, {STR_logger => @logger})
-    
+      
       @middleware_stack.around_execution(job, context) do
         job.method(:run).arity.zero? ? job.run : job.run(context)
       end

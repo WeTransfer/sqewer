@@ -98,6 +98,27 @@ describe ConveyorBelt::Worker, :sqs => true do
       ensure
         worker.stop
       end
+      
+      # Run with a per-process isolator too
+      client = Aws::SQS::Client.new
+      client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
+      
+      logger_output = ''
+      logger_to_string = Logger.new(StringIO.new(logger_output))
+      worker = described_class.new(logger: logger_to_string, num_threads: 8, isolator: ConveyorBelt::Isolator.process)
+      
+      worker.start
+      
+      begin
+        poll(fail_after: 3) { File.exist?('initial-job-run') }
+        poll(fail_after: 3) { File.exist?('secondary-job-run') }
+        
+        File.unlink('initial-job-run')
+        File.unlink('secondary-job-run')
+        expect(true).to eq(true)
+      ensure
+        worker.stop
+      end
     end
   end
 end

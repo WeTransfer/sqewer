@@ -9,16 +9,25 @@ class ConveyorBelt::Worker
   SLEEP_SECONDS_ON_EMPTY_QUEUE = 1
   THROTTLE_FACTOR = 2
   
+  # Creates a new Worker. The Worker, unlike it is in the Rails tradition, is only responsible for
+  # the actual processing of jobs, and not for the job arguments.
+  #
   # @param connection[ConveyorBelt::Connection] the object that handles polling and submitting
   # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
-  # @param execution_context_class[Class] the Ruby class that is going to be instantiated for each job execution
-  # @param submitter_class[Class] the class that is going to be instantiated for submitting jobs from within other jobs
+  # @param execution_context_class[Class] the class for the execution context (will be instantiated by 
+  # the worker for each job execution)
+  # @param submitter_class[Class] the class used for submitting jobs (will be instantiated by the worker for each job execution)
+  # @param middleware_stack[ConveyorBelt::MiddlewareStack] the middleware stack that is going to be used
+  # @param logger[Logger] the logger to log execution to and to pass to the jobs
+  # @param isolator[ConveyorBelt::Isolator] the isolator to encapsulate job instantiation and execution, if desired
+  # @param num_threads[Fixnum] how many worker threads to spawn
   def initialize(connection: ConveyorBelt::Connection.default,
       serializer: ConveyorBelt::Serializer.default,
       execution_context_class: ConveyorBelt::ExecutionContext,
       submitter_class: ConveyorBelt::Submitter,
       middleware_stack: ConveyorBelt::MiddlewareStack.default,
       logger: Logger.new($stderr),
+      isolator: ConveyorBelt::Isolator.default,
       num_threads: DEFAULT_NUM_THREADS)
     
     @logger = logger
@@ -27,6 +36,7 @@ class ConveyorBelt::Worker
     @middleware_stack = middleware_stack
     @execution_context_class = execution_context_class
     @submitter_class = submitter_class
+    @isolator = isolator
     @num_threads = num_threads
     
     raise ArgumentError, "num_threads must be > 0" unless num_threads > 0
@@ -140,24 +150,25 @@ class ConveyorBelt::Worker
   
   def take_and_execute
     message_id, message_body = @execution_queue.pop(nonblock=true)
-    return unless message_id && message_body
+    return unless message_id
+    return @connection.delete_message(message_id) unless message_body && !message_body.empty?
     
-    job = @middleware_stack.around_deserialization(@serializer, message_id, message_body) do
-      @serializer.unserialize(message_body)
+    @isolator.isolate do
+      job = @middleware_stack.around_deserialization(@serializer, message_id, message_body) do
+        @serializer.unserialize(message_body)
+      end
+    
+      t = Time.now
+      submitter = @submitter_class.new(@connection, @serializer)
+      context = @execution_context_class.new(submitter, {STR_logger => @logger})
+    
+      @middleware_stack.around_execution(job, context) do
+        job.method(:run).arity.zero? ? job.run : job.run(context)
+      end
+      
+      @logger.info { "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t) }
     end
     
-    return @connection.delete_message(message_id) unless job
-    
-    t = Time.now
-    
-    submitter = @submitter_class.new(@connection, @serializer)
-    context = @execution_context_class.new(submitter, {STR_logger => @logger})
-    
-    @middleware_stack.around_execution(job, context) do
-      job.method(:run).arity.zero? ? job.run : job.run(context)
-    end
-    
-    @logger.info { "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t) }
     @connection.delete_message(message_id)
   rescue ThreadError # Queue is empty
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
@@ -166,12 +177,7 @@ class ConveyorBelt::Worker
     @logger.error { "[worker] Signaled, will quit the consumer" }
     return
   rescue => e # anything else, at or below StandardError that does not need us to quit
-    if job
-      @logger.fatal { "[worker] Failed #{job.inspect}" } 
-    else
-      @logger.fatal { "[worker] Failed outside of a job context" }
-    end
-    
+    @logger.fatal { "[worker] Failed #{message_id} with #{e}" }
     @logger.fatal(e.class)
     @logger.fatal(e.message)
     e.backtrace.each { |s| @logger.fatal{"\t#{s}"} }

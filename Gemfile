@@ -1,11 +1,11 @@
 source "http://rubygems.org"
 
 gem 'aws-sdk', '~> 2'
-gem 'ks'
 gem 'very_tiny_state_machine', '~> 1'
 gem 'hash_tools'
 
 group :development do
+  gem 'ks'
   gem 'dotenv'
   gem 'rake'
   gem "rspec", "~> 3.2.0"

@@ -162,12 +162,16 @@ class ConveyorBelt::Worker
         t = Time.now
         submitter = @submitter_class.new(@connection, @serializer)
         context = @execution_context_class.new(submitter, {STR_logger => @logger})
-      
-        @middleware_stack.around_execution(job, context) do
-          job.method(:run).arity.zero? ? job.run : job.run(context)
+        
+        begin
+          @middleware_stack.around_execution(job, context) do
+            job.method(:run).arity.zero? ? job.run : job.run(context)
+          end
+          @logger.info { "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t) }
+        rescue => e
+          @logger.error { "[worker] Failed #{job.inspect} with a #{e}" }
+          raise e
         end
-      
-        @logger.info { "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t) }
       end
     end
     

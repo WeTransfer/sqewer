@@ -65,7 +65,7 @@ describe ConveyorBelt::Serializer do
       expect(built_job).to be_kind_of(VerySimpleJob)
     end
     
-    it 'raises an error if the job does not accept the keeyword arguments given in the ticket' do
+    it 'raises an error if the job does not accept the keyword arguments given in the ticket' do
       class OtherVerySimpleJob; end
       blob  = '{"job_class": "OtherVerySimpleJob", "foo": 1}'
       

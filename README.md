@@ -44,4 +44,10 @@ Submitting jobs from other jobs (the job will go to the same queue the parent jo
 
 The messages will only be deleted from SQS once the job execution completes without raising an exception.
 
+## Detailed usage instructions
+
 For more detailed usage information, see [DETAILS.md](./DETAILS.md)
+
+## Frequently asked questions (A.K.A. _why is it done this way_)
+
+Please see [FAQ.md](./FAQ.md). This might explain some decisions behind the library in greater detail.

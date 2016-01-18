@@ -16,10 +16,8 @@ describe Sqewer::CLI, :sqs => true do
         end
       end
    
-      sleep 2
+      sleep 4
       Process.kill("USR1", pid)
-      sleep 0.5
-      $stderr.puts stderr.read()
       
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty
@@ -44,9 +42,8 @@ describe Sqewer::CLI, :sqs => true do
         end
       end
    
-      sleep 2
+      sleep 4
       Process.kill("TERM", pid)
-      sleep 0.5
     
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty

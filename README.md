@@ -1,4 +1,4 @@
-Conveyor Belt is an SQS based queue processor.
+An AWS SQS-based queue processor, for highly distributed job engines.
 
 ## The shortest introduction possible
 

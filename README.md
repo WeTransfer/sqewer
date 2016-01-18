@@ -1,5 +1,7 @@
 An AWS SQS-based queue processor, for highly distributed job engines.
 
+[![Build Status](https://travis-ci.org/WeTransfer/sqewer.svg?branch=master)](https://travis-ci.org/WeTransfer/sqewer)
+
 ## The shortest introduction possible
 
 In your environment, set `SQS_QUEUE_URL`. Then, define a job class:

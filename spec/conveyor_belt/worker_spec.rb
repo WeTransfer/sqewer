@@ -3,6 +3,12 @@ require_relative '../spec_helper'
 describe ConveyorBelt::Worker, :sqs => true do
   let(:silent_logger) { Logger.new(StringIO.new('')) }
   
+  it 'supports .default' do
+    default_worker = described_class.default
+    expect(default_worker).to respond_to(:start)
+    expect(default_worker).to respond_to(:stop)
+  end
+    
   it 'instantiates a Logger to STDERR by default' do
     expect(Logger).to receive(:new).with(STDERR)
     worker = described_class.new

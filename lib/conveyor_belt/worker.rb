@@ -9,6 +9,13 @@ class ConveyorBelt::Worker
   SLEEP_SECONDS_ON_EMPTY_QUEUE = 1
   THROTTLE_FACTOR = 2
   
+  # Returns the default Worker instance, configured based on the default components
+  #
+  # @return [ConveyorBelt::Worker]
+  def self.default
+    @default ||= new
+  end
+  
   # Creates a new Worker. The Worker, unlike it is in the Rails tradition, is only responsible for
   # the actual processing of jobs, and not for the job arguments.
   #

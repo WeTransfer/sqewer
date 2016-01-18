@@ -6,7 +6,8 @@ describe Sqewer::CLI, :sqs => true do
       submitter = Sqewer::Connection.default
     
       stderr = Tempfile.new('worker-stderr')
-    
+      stderr.sync = true
+      
       pid = fork { $stderr.reopen(stderr); exec("ruby #{__dir__}/cli_app.rb") }
   
       Thread.new do
@@ -32,6 +33,7 @@ describe Sqewer::CLI, :sqs => true do
       submitter = Sqewer::Connection.default
     
       stderr = Tempfile.new('worker-stderr')
+      stderr.sync = true
     
       pid = fork { $stderr.reopen(stderr); exec("ruby #{__dir__}/cli_app.rb") }
   

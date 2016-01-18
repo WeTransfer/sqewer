@@ -25,9 +25,8 @@ Gem::Specification.new do |s|
     "Gemfile",
     "README.md",
     "Rakefile",
-    "conveyor_belt.gemspec",
     "example.env",
-    "lib/conveyor_belt.rb",
+    "lib/sqewer.rb",
     "lib/sqewer/atomic_counter.rb",
     "lib/sqewer/cli.rb",
     "lib/sqewer/connection.rb",
@@ -53,7 +52,8 @@ Gem::Specification.new do |s|
     "spec/sqewer/serializer_spec.rb",
     "spec/sqewer/simple_job_spec.rb",
     "spec/sqewer/submitter_spec.rb",
-    "spec/sqewer/worker_spec.rb"
+    "spec/sqewer/worker_spec.rb",
+    "sqewer.gemspec"
   ]
   s.homepage = "https://gitlab.wetransfer.net/julik/sqewer"
   s.licenses = ["MIT"]

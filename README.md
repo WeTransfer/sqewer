@@ -44,6 +44,10 @@ Submitting jobs from other jobs (the job will go to the same queue the parent jo
 
 The messages will only be deleted from SQS once the job execution completes without raising an exception.
 
+## Requirements
+
+Ruby 2.1+, version 2 of the AWS SDK.
+
 ## Detailed usage instructions
 
 For more detailed usage information, see [DETAILS.md](./DETAILS.md)

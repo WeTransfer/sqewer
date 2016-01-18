@@ -20,7 +20,7 @@ and to start processing, in your commandline handler:
 
     #!/usr/bin/env ruby
     require 'my_applicaion'
-    Sqewer::CLI.run
+    Sqewer::CLI.start
 
 To add arguments to the job
 

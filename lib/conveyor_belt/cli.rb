@@ -1,23 +1,27 @@
 module ConveyorBelt::CLI
-  def self.start(**options_for_worker)
-    logger = options_for_worker.fetch(:logger) { Logger.new($stderr) }
-    
+  # Start the commandline handler, and set up a centralized signal handler that reacts
+  # to USR1 and TERM to do a soft-terminate on the worker.
+  #
+  # @param worker[ConveyorBelt::Worker] the worker to start. Must respond to `#start` and `#stop`
+  # @return [void]
+  def start(worker = ConveyorBelt::Worker.default)
     # Use a self-pipe to accumulate signals in a central location
     self_read, self_write = IO.pipe
     %w(INT TERM USR1 USR2 TTIN).each do |sig|
       begin
         trap(sig) { self_write.puts(sig) }
       rescue ArgumentError
-        logger.warn { "Signal #{sig} not supported" }
+        # Signal not supported
       end
     end
     
-    worker = ConveyorBelt::Worker.new(**options_for_worker)
     begin
       worker.start
+      # The worker is non-blocking, so in the main CLI process we select() on the signal
+      # pipe and handle the signal in a centralized fashion
       while (readable_io = IO.select([self_read]))
         signal = readable_io.first[0].gets.strip
-        handle_signal(worker, logger, signal)
+        handle_signal(worker, signal)
       end
     rescue Interrupt
       worker.stop
@@ -25,16 +29,16 @@ module ConveyorBelt::CLI
     end
   end
   
-  def self.handle_signal(worker, logger, sig)
+  def handle_signal(worker, sig)
     case sig
     when 'USR1', 'TERM'
-      logger.info { 'Received USR1, doing a soft shutdown' }
       worker.stop
       exit 0
     #when 'TTIN' # a good place to print the worker status
     else
-      logger.warn { 'Got %s, interrupt' % sig }
       raise Interrupt
     end
   end
+  
+  extend self
 end

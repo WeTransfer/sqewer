@@ -19,7 +19,8 @@ describe ConveyorBelt::CLI, :sqs => true do
       sleep 2
       Process.kill("USR1", pid)
       sleep 0.5
-    
+      $stderr.puts stderr.read()
+      
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty
       generated_files.each{|path| File.unlink(path) }

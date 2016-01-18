@@ -1,4 +1,4 @@
-module ConveyorBelt
+module Sqewer
   module Contrib
     # Can be used as a wrapper middleware in an ExecutionContext to log exceptions
     # to Appsignal and to monitor performance. Will only activate
@@ -18,7 +18,7 @@ module ConveyorBelt
       def around_execution(job, context)
         return yield unless (defined?(Appsignal) && Appsignal.active?)
         
-        Appsignal.monitor_transaction('perform_job.conveyor_belt', 
+        Appsignal.monitor_transaction('perform_job.sqewer', 
           :class => job.class.to_s, :params => job.to_h, :method => 'run') do |t|
             context['appsignal.transaction'] = t
           yield

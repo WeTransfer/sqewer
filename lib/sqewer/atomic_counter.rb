@@ -1,7 +1,7 @@
 require 'thread'
 
 # Maintains a thread-safe counter wrapped in a Mutex.
-class ConveyorBelt::AtomicCounter
+class Sqewer::AtomicCounter
   def initialize
     @m, @v = Mutex.new, 0
   end

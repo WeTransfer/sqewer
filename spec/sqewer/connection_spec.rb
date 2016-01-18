@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::Connection do
+describe Sqewer::Connection do
   describe '.default' do
     it 'returns a new Connection with the SQS queue location picked from SQS_QUEUE_URL envvar' do
       expect(ENV).to receive(:fetch).with('SQS_QUEUE_URL').and_return('https://aws-fake-queue.com')

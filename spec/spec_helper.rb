@@ -10,7 +10,7 @@ Dotenv.load
 require 'aws-sdk'
 
 SimpleCov.start
-require 'conveyor_belt'
+require 'sqewer'
 
 module Polling
   # Call the given block every N seconds, and return once the

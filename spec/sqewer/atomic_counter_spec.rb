@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::AtomicCounter do
+describe Sqewer::AtomicCounter do
   it 'is atomic' do
     c = described_class.new
     expect(c.to_i).to be_zero

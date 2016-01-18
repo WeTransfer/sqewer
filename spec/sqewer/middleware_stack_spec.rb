@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::MiddlewareStack do
+describe Sqewer::MiddlewareStack do
   it 'returns a default instance' do
     stacks = (1..100).map { described_class.default }
     expect(stacks.uniq.length).to eq(1)

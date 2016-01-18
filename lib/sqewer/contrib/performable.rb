@@ -1,4 +1,4 @@
-module ConveyorBelt
+module Sqewer
   module Contrib
     # A job class that can be used to adapt Jobs from ActiveJob and friends. They use
     # the `perform` method which gets the arguments.

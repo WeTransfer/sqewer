@@ -1,5 +1,5 @@
 # Allows arbitrary wrapping of the job deserialization and job execution procedures
-class ConveyorBelt::MiddlewareStack
+class Sqewer::MiddlewareStack
   
   # Returns the default middleware stack, which is empty (an instance of None).
   #

@@ -10,13 +10,13 @@ rescue Bundler::BundlerError => e
   exit e.status_code
 end
 require 'rake'
-require_relative 'lib/conveyor_belt/version'
+require_relative 'lib/sqewer/version'
 require 'jeweler'
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://guides.rubygems.org/specification-reference/ for more options
-  gem.version = ConveyorBelt::VERSION
-  gem.name = "conveyor_belt"
-  gem.homepage = "https://gitlab.wetransfer.net/julik/conveyor_belt"
+  gem.version = Sqewer::VERSION
+  gem.name = "sqewer"
+  gem.homepage = "https://gitlab.wetransfer.net/julik/sqewer"
   gem.license = "MIT"
   gem.description = %Q{Process jobs from SQS}
   gem.summary = %Q{A full-featured library for all them worker needs}

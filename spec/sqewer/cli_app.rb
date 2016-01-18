@@ -1,7 +1,7 @@
-require_relative '../../lib/conveyor_belt'
+require_relative '../../lib/sqewer'
 
 class MyJob
-  include ConveyorBelt::SimpleJob
+  include Sqewer::SimpleJob
   attr_accessor :first_name
   attr_accessor :last_name
   
@@ -10,4 +10,4 @@ class MyJob
   end
 end
 
-ConveyorBelt::CLI.start
+Sqewer::CLI.start

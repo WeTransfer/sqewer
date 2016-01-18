@@ -1,9 +1,9 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::CLI, :sqs => true do
+describe Sqewer::CLI, :sqs => true do
   describe 'runs the commandline app, executes jobs and then quits cleanly' do
     it 'on a USR1 signal' do
-      submitter = ConveyorBelt::Connection.default
+      submitter = Sqewer::Connection.default
     
       stderr = Tempfile.new('worker-stderr')
     
@@ -31,7 +31,7 @@ describe ConveyorBelt::CLI, :sqs => true do
     end
     
     it 'on a TERM signal' do
-      submitter = ConveyorBelt::Connection.default
+      submitter = Sqewer::Connection.default
     
       stderr = Tempfile.new('worker-stderr')
     

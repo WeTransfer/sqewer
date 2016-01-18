@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::ExecutionContext do
+describe Sqewer::ExecutionContext do
   it 'offers a submit! that goes through the given Submitter argument' do
     fake_submitter = double('Submitter')
     expect(fake_submitter).to receive(:submit!).with(:fake_job, {})
@@ -30,7 +30,7 @@ describe ConveyorBelt::ExecutionContext do
     fake_submitter = double('Submitter')
     
     subject = described_class.new(fake_submitter)
-    expect(subject.logger).to eq(ConveyorBelt::NullLogger)
+    expect(subject.logger).to eq(Sqewer::NullLogger)
   end
   
   it 'offers access to the given "logger" extra param if it was given to the constructor' do

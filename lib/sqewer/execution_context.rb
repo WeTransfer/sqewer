@@ -4,10 +4,10 @@ require 'logger'
 # of the job). The job can use this object to submit extra jobs, or to get
 # at the things specific for the execution context (database/key-value store
 # connections, error handling transaction and so on).
-class ConveyorBelt::ExecutionContext
+class Sqewer::ExecutionContext
   # Create a new ExecutionContext with an environment hash.
   #
-  # @param submitter[ConveyorBelt::Submitter] the object to submit new jobs through. Used when jobs want to submit jobs
+  # @param submitter[Sqewer::Submitter] the object to submit new jobs through. Used when jobs want to submit jobs
   # @param extra_variables[Hash] any extra data to pass around to each Job
   def initialize(submitter, extra_variables={})
     @submitter = submitter
@@ -50,6 +50,6 @@ class ConveyorBelt::ExecutionContext
   #
   # @return [Logger] the logger to send messages to.
   def logger
-    @params.fetch('logger') { ConveyorBelt::NullLogger }
+    @params.fetch('logger') { Sqewer::NullLogger }
   end
 end

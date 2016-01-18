@@ -1,3 +1,3 @@
-module ConveyorBelt
+module Sqewer
   VERSION = '1.0.0'
 end

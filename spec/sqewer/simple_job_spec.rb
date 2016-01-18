@@ -1,10 +1,10 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::SimpleJob do
+describe Sqewer::SimpleJob do
   it 'raises a clear error for an unknown attribute' do
     example_class = Class.new do
       attr_accessor :foo, :bar
-      include ConveyorBelt::SimpleJob
+      include Sqewer::SimpleJob
     end
     
     expect {
@@ -15,7 +15,7 @@ describe ConveyorBelt::SimpleJob do
   it 'uses defined accessors to provide decent string representation' do
     example_class = Class.new do
       attr_accessor :foo, :bar
-      include ConveyorBelt::SimpleJob
+      include Sqewer::SimpleJob
     end
     
     job = example_class.new(foo: 1, bar: 2)
@@ -29,7 +29,7 @@ describe ConveyorBelt::SimpleJob do
       def inspectable_attributes
         [:foo]
       end
-      include ConveyorBelt::SimpleJob
+      include Sqewer::SimpleJob
     end
     
     job = example_class.new(foo: 1, bar: 2)
@@ -41,7 +41,7 @@ describe ConveyorBelt::SimpleJob do
   it 'provides for a keyword argument constructor and a to_h method' do
     example_class = Class.new do
       attr_accessor :foo, :bar
-      include ConveyorBelt::SimpleJob
+      include Sqewer::SimpleJob
     end
     
     string_repr = example_class.to_s
@@ -59,7 +59,7 @@ describe ConveyorBelt::SimpleJob do
   it 'raises if arguments are forgotten' do
     example_class = Class.new do
       attr_accessor :foo, :bar
-      include ConveyorBelt::SimpleJob
+      include Sqewer::SimpleJob
     end
     
     expect {

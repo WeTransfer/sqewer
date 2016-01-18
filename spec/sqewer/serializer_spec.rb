@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::Serializer do
+describe Sqewer::Serializer do
   describe '.default' do
     it 'returns the same Serializer instance' do
       instances = (1..1000).map{ described_class.default }

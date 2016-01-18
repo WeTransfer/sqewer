@@ -89,11 +89,11 @@ Or if you are using `ks` gem (https://rubygems.org/gems/ks) you could inherit yo
 
 ## Job marshaling
 
-By default, the jobs are converted to JSON and back from JSON using the ConveyorBelt::Serializer object. You can
+By default, the jobs are converted to JSON and back from JSON using the Sqewer::Serializer object. You can
 override that object if you need to handle job tickets that come from external sources and do not necessarily
 conform to the job serialization format used internally. For example, you can handle S3 bucket notifications:
 
-    class CustomSerializer < ConveyorBelt::Serializer
+    class CustomSerializer < Sqewer::Serializer
       # Overridden so that we can instantiate a custom job
       # from the AWS notification payload.
       # Return "nil" and the job will be simply deleted from the queue
@@ -108,7 +108,7 @@ conform to the job serialization format used internally. For example, you can ha
 
 Or you can override the serialization method to add some metadata to the job ticket on job submission:
 
-    class CustomSerializer < ConveyorBelt::Serializer
+    class CustomSerializer < Sqewer::Serializer
       def serialize(job_object)
         json_blob = super
         parsed = JSON.load(json_blob)
@@ -126,7 +126,7 @@ The very minimal executable for running jobs would be this:
 
     #!/usr/bin/env ruby
     require 'my_applicaion'
-    ConveyorBelt::CLI.run
+    Sqewer::CLI.run
 
 This will connect to the queue at the URL set in the `SQS_QUEUE_URL` environment variable.
 
@@ -134,7 +134,7 @@ You can also run a worker without signal handling, for example in test
 environments. Note that the worker is asynchronous, it has worker threads
 which do all the operations by themselves.
 
-    worker = ConveyorBelt::Worker.new
+    worker = Sqewer::Worker.new
     worker.start
     # ...and once you are done testing
     worker.stop
@@ -145,14 +145,14 @@ One of the reasons this library exists is that sometimes you need to set up some
 things than usually assumed to be possible. For example, you might want to have a special
 logging library:
 
-    worker = ConveyorBelt::Worker.new(logger: MyCustomLogger.new)
+    worker = Sqewer::Worker.new(logger: MyCustomLogger.new)
 
 Or you might want a different job serializer/deserializer (for instance, if you want to handle
 S3 bucket notifications coming into the same queue):
 
-    worker = ConveyorBelt::Worker.new(serializer: CustomSerializer.new)
+    worker = Sqewer::Worker.new(serializer: CustomSerializer.new)
 
-The `ConveyorBelt::CLI` module that you run from the commandline handler application accepts the
+The `Sqewer::CLI` module that you run from the commandline handler application accepts the
 same options as the `Worker` constructor, so everything stays configurable.
 
 ## Execution and serialization wrappers (middleware)
@@ -175,6 +175,6 @@ You can wrap job processing in middleware. A full-featured middleware class look
 
 You need to set up a `MiddlewareStack` and supply it to the `Worker` when instantiating:
 
-    stack = ConveyorBelt::MiddlewareStack.new
+    stack = Sqewer::MiddlewareStack.new
     stack << MyWrapper.new
-    w = ConveyorBelt::Worker.new(middleware_stack: stack)
+    w = Sqewer::Worker.new(middleware_stack: stack)

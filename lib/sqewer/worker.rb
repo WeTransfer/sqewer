@@ -4,14 +4,14 @@ require 'very_tiny_state_machine'
 require 'fiber'
 
 # A massively threaded worker engine
-class ConveyorBelt::Worker
+class Sqewer::Worker
   DEFAULT_NUM_THREADS = 4
   SLEEP_SECONDS_ON_EMPTY_QUEUE = 1
   THROTTLE_FACTOR = 2
   
   # Returns the default Worker instance, configured based on the default components
   #
-  # @return [ConveyorBelt::Worker]
+  # @return [Sqewer::Worker]
   def self.default
     @default ||= new
   end
@@ -19,22 +19,22 @@ class ConveyorBelt::Worker
   # Creates a new Worker. The Worker, unlike it is in the Rails tradition, is only responsible for
   # the actual processing of jobs, and not for the job arguments.
   #
-  # @param connection[ConveyorBelt::Connection] the object that handles polling and submitting
+  # @param connection[Sqewer::Connection] the object that handles polling and submitting
   # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
   # @param execution_context_class[Class] the class for the execution context (will be instantiated by 
   # the worker for each job execution)
   # @param submitter_class[Class] the class used for submitting jobs (will be instantiated by the worker for each job execution)
-  # @param middleware_stack[ConveyorBelt::MiddlewareStack] the middleware stack that is going to be used
+  # @param middleware_stack[Sqewer::MiddlewareStack] the middleware stack that is going to be used
   # @param logger[Logger] the logger to log execution to and to pass to the jobs
-  # @param isolator[ConveyorBelt::Isolator] the isolator to encapsulate job instantiation and execution, if desired
+  # @param isolator[Sqewer::Isolator] the isolator to encapsulate job instantiation and execution, if desired
   # @param num_threads[Fixnum] how many worker threads to spawn
-  def initialize(connection: ConveyorBelt::Connection.default,
-      serializer: ConveyorBelt::Serializer.default,
-      execution_context_class: ConveyorBelt::ExecutionContext,
-      submitter_class: ConveyorBelt::Submitter,
-      middleware_stack: ConveyorBelt::MiddlewareStack.default,
+  def initialize(connection: Sqewer::Connection.default,
+      serializer: Sqewer::Serializer.default,
+      execution_context_class: Sqewer::ExecutionContext,
+      submitter_class: Sqewer::Submitter,
+      middleware_stack: Sqewer::MiddlewareStack.default,
       logger: Logger.new($stderr),
-      isolator: ConveyorBelt::Isolator.default,
+      isolator: Sqewer::Isolator.default,
       num_threads: DEFAULT_NUM_THREADS)
     
     @logger = logger
@@ -48,7 +48,7 @@ class ConveyorBelt::Worker
     
     raise ArgumentError, "num_threads must be > 0" unless num_threads > 0
     
-    @execution_counter = ConveyorBelt::AtomicCounter.new
+    @execution_counter = Sqewer::AtomicCounter.new
     
     @state = VeryTinyStateMachine.new(:stopped)
     @state.permit_state :starting, :running, :stopping, :stopped, :failed

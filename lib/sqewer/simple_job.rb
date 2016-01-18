@@ -4,7 +4,7 @@
 # * initialize() will have keyword access to all accessors, and will ensure you have called each one of them
 # * to_h() will produce a symbolized Hash with all the properties defined using attr_accessor, and the job_class_name
 # * inspect() will provide a sensible default string representation for logging
-module ConveyorBelt::SimpleJob
+module Sqewer::SimpleJob
   UnknownJobAttribute = Class.new(StandardError)
   MissingAttribute = Class.new(StandardError)
   

@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::Worker, :sqs => true do
+describe Sqewer::Worker, :sqs => true do
   let(:silent_logger) { Logger.new(StringIO.new('')) }
   
   it 'supports .default' do
@@ -111,7 +111,7 @@ describe ConveyorBelt::Worker, :sqs => true do
       
       logger_output = ''
       logger_to_string = Logger.new(StringIO.new(logger_output))
-      worker = described_class.new(logger: logger_to_string, num_threads: 8, isolator: ConveyorBelt::Isolator.process)
+      worker = described_class.new(logger: logger_to_string, num_threads: 8, isolator: Sqewer::Isolator.process)
       
       worker.start
       

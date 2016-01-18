@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-describe ConveyorBelt::Submitter do
+describe Sqewer::Submitter do
   describe '.default' do
     it 'returns a set up Submitter with the configured Connection and Serializer' do
       expect(ENV).to receive(:fetch).with('SQS_QUEUE_URL').and_return('https://some-queue.aws.com')

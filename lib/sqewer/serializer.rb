@@ -2,8 +2,8 @@
 # restores jobs from those strings. If you want to use, say, Marshal
 # to store your jobs instead of the default, or if you want to generate
 # custom job objects from S3 bucket notifications, you might want to override this
-# class and feed the overridden instance to {ConveyorBelt::Worker}.
-class ConveyorBelt::Serializer
+# class and feed the overridden instance to {Sqewer::Worker}.
+class Sqewer::Serializer
   
   # Returns the default Serializer, of which we store one instance
   # (because the serializer is stateless).

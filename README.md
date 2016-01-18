@@ -12,18 +12,18 @@ In your environment, set `SQS_QUEUE_URL`. Then, define a job class:
 
 Then submit the job:
 
-    ConveyorBelt.submit!(MyJob.new)
+    Sqewer.submit!(MyJob.new)
 
 and to start processing, in your commandline handler:
 
     #!/usr/bin/env ruby
     require 'my_applicaion'
-    ConveyorBelt::CLI.run
+    Sqewer::CLI.run
 
 To add arguments to the job
 
     class JobWithArgs
-      include ConveyorBelt::SimpleJob
+      include Sqewer::SimpleJob
       attr_accessor :times
       
       def run
@@ -31,7 +31,7 @@ To add arguments to the job
       end
     end
     ...
-    ConveyorBelt.submit!(JobWithArgs.new(times: 20))
+    Sqewer.submit!(JobWithArgs.new(times: 20))
 
 Submitting jobs from other jobs (the job will go to the same queue the parent job came from):
 

@@ -5,7 +5,7 @@
 #
 # * no message should be deleted if the receiving client has not deleted it explicitly
 # * any execution that ends with an exception should cause the message to be re-enqueued
-class ConveyorBelt::Connection
+class Sqewer::Connection
   DEFAULT_TIMEOUT_SECONDS = 5
   BATCH_RECEIVE_SIZE = 10
   
@@ -14,7 +14,7 @@ class ConveyorBelt::Connection
   def self.default
     new(ENV.fetch('SQS_QUEUE_URL'))
   rescue KeyError => e
-    raise "SQS_QUEUE_URL not set in the environment. This is the queue URL that the default that ConveyorBelt uses"
+    raise "SQS_QUEUE_URL not set in the environment. This is the queue URL that the default that Sqewer uses"
   end
   
   # Initializes a new adapter, with access to the SQS queue at the given URL.

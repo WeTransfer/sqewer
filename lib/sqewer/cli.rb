@@ -1,10 +1,10 @@
-module ConveyorBelt::CLI
+module Sqewer::CLI
   # Start the commandline handler, and set up a centralized signal handler that reacts
   # to USR1 and TERM to do a soft-terminate on the worker.
   #
-  # @param worker[ConveyorBelt::Worker] the worker to start. Must respond to `#start` and `#stop`
+  # @param worker[Sqewer::Worker] the worker to start. Must respond to `#start` and `#stop`
   # @return [void]
-  def start(worker = ConveyorBelt::Worker.default)
+  def start(worker = Sqewer::Worker.default)
     # Use a self-pipe to accumulate signals in a central location
     self_read, self_write = IO.pipe
     %w(INT TERM USR1 USR2 TTIN).each do |sig|

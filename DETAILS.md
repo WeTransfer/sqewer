@@ -155,6 +155,16 @@ S3 bucket notifications coming into the same queue):
 The `Sqewer::CLI` module that you run from the commandline handler application accepts the
 same options as the `Worker` constructor, so everything stays configurable.
 
+## Threads versus processes
+
+You can elect to use process isolation per job. Each job will then run in a forked process, on which
+the main worker process will `wait()`. To do so, pass `Sqewer::Isolator.process` as the `isolator:`
+option to the Worker
+
+    proc_worker = Sqewer::Worker.new(isolator: Sqewer::Isolator.process)
+
+By default the system is working with threads only, as processes obviously have some overhead.
+
 ## Execution and serialization wrappers (middleware)
 
 You can wrap job processing in middleware. A full-featured middleware class looks like this:

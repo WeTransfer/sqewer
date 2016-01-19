@@ -17,8 +17,9 @@ describe Sqewer::CLI, :sqs => true do
         end
       end
    
-      sleep 4
+      sleep 8 # Give it some time to process all the jobs
       Process.kill("USR1", pid)
+      sleep 2
       
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty

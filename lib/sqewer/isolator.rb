@@ -45,7 +45,7 @@ class Sqewer::Isolator
     return unless job
     
     submitter = submitter_class.new(connection, serializer)
-    context = execution_context_class.new(submitter, {'logger' => @logger})
+    context = execution_context_class.new(submitter, {'logger' => logger})
     
     t = Time.now
     middleware_stack.around_execution(job, context) do

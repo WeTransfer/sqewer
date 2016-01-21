@@ -31,27 +31,23 @@ describe Sqewer::Connection do
     end
   end
   
-  describe '#poll' do
+  describe '#receive_messages' do
     it 'uses the batched receive feature' do
       s = described_class.new('https://fake-queue')
       
-      fake_poller = double('QueuePoller')
-      expect(::Aws::SQS::QueuePoller).to receive(:new).with('https://fake-queue') { fake_poller }
-      expect(fake_poller).to receive(:poll) {|*a, **k, &blk|
-        expect(k[:max_number_of_messages]).to be > 1
-        bulk = (1..5).map do
-          double('SQSMessage', receipt_handle: SecureRandom.hex(4), body: 'Some message')
-        end
-        # Yields arrays of messages, so...
-        blk.call(bulk)
+      fake_sqs_client = double('Client')
+      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      
+      fake_messages = (1..5).map {
+        double(receipt_handle: SecureRandom.hex(4), body: SecureRandom.random_bytes(128))
       }
+      fake_response = double(messages: fake_messages)
       
-      receives = []
-      s.poll do | sqs_message_handle, sqs_message_body |
-        receives << [sqs_message_handle, sqs_message_body]
-      end
+      expect(fake_sqs_client).to receive(:receive_message).with({:queue_url=>"https://fake-queue", :wait_time_seconds=>5, 
+          :max_number_of_messages=>10}).and_return(fake_response)
       
-      expect(receives.length).to eq(5)
+      messages = s.receive_messages
+      expect(messages.length).to eq(5)
     end
   end
 end

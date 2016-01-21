@@ -114,7 +114,6 @@ class Sqewer::Worker
             @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
           else
             @logger.debug { "[worker] No messages received" }
-            sleep 1
             Thread.pass
           end
         else

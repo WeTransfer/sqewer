@@ -41,7 +41,8 @@ class Sqewer::Connection
   # @return [Array<Message>] an array of Message objects 
   def receive_messages
     client = ::Aws::SQS::Client.new
-    response = client.receive_message(queue_url: @queue_url, wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: 10)
+    response = client.receive_message(queue_url: @queue_url,
+      wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: 10)
     response.messages.map do | message |
       Message.new(message.receipt_handle, message.body)
     end

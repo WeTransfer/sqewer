@@ -152,8 +152,20 @@ S3 bucket notifications coming into the same queue):
 
     worker = Sqewer::Worker.new(serializer: CustomSerializer.new)
 
-The `Sqewer::CLI` module that you run from the commandline handler application accepts the
-same options as the `Worker` constructor, so everything stays configurable.
+You can also elect to inherit from the `Worker` class and override some default constructor
+arguments:
+
+    class CustomWorker < Sqewer::Worker
+      def initialize(**kwargs)
+        super(serializer: CustomSerializer.mnew, ..., **kwargs)
+      end
+    end
+
+The `Sqewer::CLI` module that you run from the commandline handler application can be
+started with your custom Worker of choice:
+
+    custom_worker = Sqewer::Worker.new(logger: special_logger)
+    Sqewer::CLI.start(custom_worker)
 
 ## Threads versus processes
 

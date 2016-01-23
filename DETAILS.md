@@ -128,7 +128,9 @@ The very minimal executable for running jobs would be this:
     require 'my_applicaion'
     Sqewer::CLI.run
 
-This will connect to the queue at the URL set in the `SQS_QUEUE_URL` environment variable.
+This will connect to the queue at the URL set in the `SQS_QUEUE_URL` environment variable, and
+use all the default parameters. The `CLI` module will also set up a signal handler to terminate
+the current jobs cleanly if the commandline app receives a USR1, TERM or INT signal.
 
 You can also run a worker without signal handling, for example in test
 environments. Note that the worker is asynchronous, it has worker threads

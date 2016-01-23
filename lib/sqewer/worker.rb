@@ -124,18 +124,7 @@ class Sqewer::Worker
       end
     end
     
-    # It makes sense to have one GC caller per process, since a GC cuts across threads.
-    # We will perform a full GC cycle after the same number of jobs as our consumer thread
-    # count - so not on every job, but still as often as we can to keep the memory use in check.
-    gc = Thread.new do
-      loop do
-        break if stopping?
-        GC.start if (@execution_counter.to_i % @num_threads).zero?
-        sleep 0.5
-      end
-    end
-    
-    @threads = [provider, gc] + consumers
+    @threads = consumers + [provider]
     
     # If any of our threads are already dead, it means there is some misconfiguration and startup failed
     if @threads.any?{|t| !t.alive? }
@@ -153,6 +142,13 @@ class Sqewer::Worker
   def stop
     @state.transition! :stopping
     @logger.info { '[worker] Stopping (clean shutdown), will wait for threads to terminate'}
+    loop do
+      break if @threads.all{|e| !e.alive? }
+      still_alive = @threads.select(&:alive?).length
+      @logger.info { '[worker] %d threads still churning or sleeping' % still_alive }
+      sleep 2
+    end
+    
     @threads.map(&:join)
     @logger.info { '[worker] Stopped'}
     @state.transition! :stopped

@@ -130,7 +130,7 @@ The very minimal executable for running jobs would be this:
 
 This will connect to the queue at the URL set in the `SQS_QUEUE_URL` environment variable, and
 use all the default parameters. The `CLI` module will also set up a signal handler to terminate
-the current jobs cleanly if the commandline app receives a USR1, TERM or INT signal.
+the current jobs cleanly if the commandline app receives a USR1 and TERM.
 
 You can also run a worker without signal handling, for example in test
 environments. Note that the worker is asynchronous, it has worker threads

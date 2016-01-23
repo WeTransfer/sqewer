@@ -143,9 +143,12 @@ class Sqewer::Worker
     @state.transition! :stopping
     @logger.info { '[worker] Stopping (clean shutdown), will wait for threads to terminate'}
     loop do
-      break if @threads.all{|e| !e.alive? }
-      still_alive = @threads.select(&:alive?).length
-      @logger.info { '[worker] %d threads still churning or sleeping' % still_alive }
+      n_live = @threads.select(&:alive?).length
+      break if n_live.zero?
+      
+      n_dead = @threads.length - n_live
+      @logger.info {"Waiting on threads to terminate, %d still alive, %d quit" % [n_live, n_dead] }
+      
       sleep 2
     end
     

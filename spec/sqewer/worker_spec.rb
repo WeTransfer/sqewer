@@ -97,8 +97,8 @@ describe Sqewer::Worker, :sqs => true do
       worker.start
       
       begin
-        poll(fail_after: 3) { File.exist?('initial-job-run') }
-        poll(fail_after: 3) { File.exist?('secondary-job-run') }
+        wait_for { File.exist?('initial-job-run') }.to eq(true)
+        wait_for { File.exist?('secondary-job-run') }.to eq(true)
         
         File.unlink('initial-job-run')
         File.unlink('secondary-job-run')
@@ -130,8 +130,8 @@ describe Sqewer::Worker, :sqs => true do
       worker.start
       
       begin
-        poll(fail_after: 3) { File.exist?('initial-job-run') }
-        poll(fail_after: 3) { File.exist?('secondary-job-run') }
+        wait_for { File.exist?('initial-job-run') }.to eq(true)
+        wait_for { File.exist?('secondary-job-run') }.to eq(true)
         
         File.unlink('initial-job-run')
         File.unlink('secondary-job-run')

@@ -1,6 +1,10 @@
 require_relative '../spec_helper'
 
-describe Sqewer::CLI, :sqs => true do
+describe Sqewer::CLI, :sqs => true, :wait => {timeout: 120} do
+  after :each do
+    Dir.glob('*-result').each{|path| File.unlink(path) }
+  end
+    
   describe 'runs the commandline app, executes jobs and then quits cleanly' do
     it 'on a USR1 signal' do
       submitter = Sqewer::Connection.default
@@ -17,13 +21,12 @@ describe Sqewer::CLI, :sqs => true do
         end
       end
    
-      sleep 8 # Give it some time to process all the jobs
+      sleep 10 # Give it some time to process all the jobs
       Process.kill("USR1", pid)
-      sleep 2
+      wait_for { Process.wait(pid) }
       
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty
-      generated_files.each{|path| File.unlink(path) }
     
       stderr.rewind
       log_output = stderr.read
@@ -47,7 +50,8 @@ describe Sqewer::CLI, :sqs => true do
    
       sleep 4
       Process.kill("TERM", pid)
-    
+      wait_for { Process.wait(pid) }
+      
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty
       generated_files.each{|path| File.unlink(path) }

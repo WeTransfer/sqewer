@@ -10,9 +10,7 @@ class Sqewer::Submitter < Struct.new(:connection, :serializer)
     new(Sqewer::Connection.default, Sqewer::Serializer.default)
   end
   
-  def submit!(*jobs, **kwargs_for_send)
-    jobs.each do | job |
-      connection.send_message(serializer.serialize(job), **kwargs_for_send)
-    end
+  def submit!(job, **kwargs_for_send)
+    connection.send_message(serializer.serialize(job), **kwargs_for_send)
   end
 end

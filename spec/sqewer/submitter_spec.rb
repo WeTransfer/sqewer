@@ -39,21 +39,5 @@ describe Sqewer::Submitter do
       subject = described_class.new(fake_connection, fake_serializer)
       subject.submit!(:some_object, delay_seconds: 5)
     end
-    
-    
-    # TODO: should use batched sends
-    it 'unsplats the array of jobs and sends them one by one' do
-      fake_serializer = double('Some serializer')
-      expect(fake_serializer).to receive(:serialize).at_least(5).times {|object_to_serialize|
-        expect(object_to_serialize).not_to be_nil
-        'serialized-object-data'
-      }
-      
-      fake_connection = double('Some SQS connection')
-      expect(fake_connection).to receive(:send_message).at_least(5).times.with('serialized-object-data', {})
-      
-      subject = described_class.new(fake_connection, fake_serializer)
-      subject.submit!(:one, :two, :three, :four, :five)
-    end
   end
 end

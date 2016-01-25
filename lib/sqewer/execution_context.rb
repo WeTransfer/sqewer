@@ -16,8 +16,10 @@ class Sqewer::ExecutionContext
   end
   
   # Submits one or more jobs to the queue
-  def submit!(*jobs, **execution_options)
-    @submitter.submit!(*jobs, **execution_options)
+  #
+  # @see {Sqewer::Submitter#submit!}
+  def submit!(job, **execution_options)
+    @submitter.submit!(job, **execution_options)
   end
   
   # Sets a key in the execution environment

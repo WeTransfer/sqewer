@@ -80,6 +80,15 @@ class Sqewer::Worker
     @state.permit_transition :starting => :failed # Failed to start
   end
   
+  def log_error(e, context = nil)
+    context ||= "unknown"
+    @logger.error { "[worker] Error in consumer (#{context.inspect}): #{e}" }
+    
+    @logger.error(e.class)
+    @logger.error(e.message)
+    (e.backtrace || []).each { |s| @logger.error{"\t#{s}"} }
+  end
+  
   # Start listening on the queue, spin up a number of consumer threads that will execute the jobs.
   #
   # @param num_threads[Fixnum] the number of consumer/executor threads to spin up
@@ -99,8 +108,8 @@ class Sqewer::Worker
           begin
             take_and_execute
           rescue Interrupt, SignalException => interrupt
-            @logger.error { "[worker] Worker interrupted via #{interrupt}" }
-            raise interrupt
+            log_error(interrupt)
+            break
           end
         }
       end
@@ -194,12 +203,7 @@ class Sqewer::Worker
   rescue ThreadError # Queue is empty
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
     Thread.pass
-  rescue => e # anything else, at or below StandardError that does not need us to quit
-    @logger.error { "[worker] Failed #{message.inspect} with #{e}" }
-    @logger.error(e.class)
-    @logger.error(e.message)
-    e.backtrace.each { |s| @logger.error{"\t#{s}"} }
+  rescue => e # any StandardError, all "bigger" errors should bubble up into the consumer thread loop
+    log_error(e, message)
   end
-  
-  STR_logger = 'logger'
 end

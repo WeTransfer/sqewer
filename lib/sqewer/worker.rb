@@ -96,7 +96,12 @@ class Sqewer::Worker
       Thread.new do
         loop { 
           break if @state.in_state?(:stopping)
-          take_and_execute
+          begin
+            take_and_execute
+          rescue Interrupt, SignalException => interrupt
+            @logger.error { "[worker] Worker interrupted via #{interrupt}" }
+            raise interrupt
+          end
         }
       end
     end

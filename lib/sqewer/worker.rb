@@ -95,8 +95,8 @@ class Sqewer::Worker
     consumers = (1..@num_threads).map do
       Thread.new do
         loop { 
-          break if @state.in_state?(:stopping)
           take_and_execute
+          break if stopping?
         }
       end
     end
@@ -180,7 +180,7 @@ class Sqewer::Worker
     return unless message.receipt_handle
     return @connection.delete_message(message.receipt_handle) unless message.has_body?
     @isolator.perform(self, message)
-    @connection.delete_message(message.receipt_handle)
+    # The message delete happens within the Isolator
   end
   
   def take_and_execute
@@ -190,11 +190,7 @@ class Sqewer::Worker
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
     Thread.pass
   rescue => e # anything else, at or below StandardError that does not need us to quit
-    @logger.error { "[worker] Failed #{message.inspect} with #{e}" }
-    @logger.error(e.class)
-    @logger.error(e.message)
+    @logger.error { "[worker] Failed %s... with %s: %s" % [message.inspect[0..64], e.class, e.message] }
     e.backtrace.each { |s| @logger.error{"\t#{s}"} }
   end
-  
-  STR_logger = 'logger'
 end

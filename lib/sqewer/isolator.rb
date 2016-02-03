@@ -51,7 +51,9 @@ class Sqewer::Isolator
     middleware_stack.around_execution(job, context) do
       job.method(:run).arity.zero? ? job.run : job.run(context)
     end
-    logger.info { "[worker] Finished #{job.inspect} in %0.2fs" % (Time.now - t) }
+    # FIXME: do not mix templating and format strings
+    delta = Time.now - t
+    logger.info { "[worker] Finished %s in %0.2fs" % [job.inspect, delta] }
   rescue => e
     logger.error { "[worker] Failed #{job.inspect} with a #{e}" } if job
     raise e

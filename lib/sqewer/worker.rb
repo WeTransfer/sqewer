@@ -117,9 +117,8 @@ class Sqewer::Worker
             Thread.pass
           end
         else
-          @logger.debug { "[worker] Suspending poller (%d items buffered)" % @execution_queue.length }
-          sleep 1
-          Thread.pass
+          @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
+          sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
         end 
       end
     end
@@ -188,7 +187,6 @@ class Sqewer::Worker
     handle_message(message)
   rescue ThreadError # Queue is empty
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
-    Thread.pass
   rescue => e # anything else, at or below StandardError that does not need us to quit
     @logger.error { "[worker] Failed %s... with %s: %s" % [message[0..64].inspect, e.class, e.message] }
     e.backtrace.each { |s| @logger.error{"\t#{s}"} }

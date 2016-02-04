@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 
 gem 'aws-sdk', '~> 2'
-gem 'very_tiny_state_machine', '~> 1', '< 2'
+gem 'very_tiny_state_machine'
 gem 'hash_tools'
 gem 'exceptional_fork'
 

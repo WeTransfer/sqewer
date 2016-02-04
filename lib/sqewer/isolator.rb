@@ -33,12 +33,17 @@ class Sqewer::Isolator
   # @param worker[Sqewer::Worker] the worker that is running the jobs
   # @param message[Sqewer::Connection::Message] the message that is being processed
   def perform(worker, message)
+    submitter_class = worker.submitter_class
+    execution_context_class = worker.execution_context_class
+    middleware_stack = worker.middleware_stack
+    connection = worker.connection
+    logger = worker.logger
+    serializer = worker.serializer
     
-    submitter_class, execution_context_class, 
-      middleware_stack, connection, serializer, logger = 
-        worker.submitter_class, worker.execution_context_class,
-          worker.middleware_stack, worker.connection, worker.serializer, worker.logger
-    
+    # Create a messagebox that buffers all the calls to Connection, so that
+    # we can send out those commands in one go (without interfering with senders
+    # on other threads, as it seems the Aws::SQS::Client is not entirely
+    # thread-safe - or at least not it's HTTP client part).
     box = Sqewer::ConnectionMessagebox.new(connection)
     
     job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body) do
@@ -60,10 +65,8 @@ class Sqewer::Isolator
     
     delta = Time.now - t
     logger.info { "[worker] Finished %s in %0.2fs" % [job.inspect, delta] }
-  rescue => e
-    raise e
   ensure
     n_flushed = box.flush!
-    logger.info { "[worker] Flushed %d messages" % n_flushed } if n_flushed.nonzero?
+    logger.debug { "[worker] Flushed %d connection commands" % n_flushed } if n_flushed.nonzero?
   end
 end

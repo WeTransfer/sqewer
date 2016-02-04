@@ -74,10 +74,7 @@ class Sqewer::Worker
     
     @execution_counter = Sqewer::AtomicCounter.new
     
-    @state = VeryTinyStateMachine.new(:stopped)
-    @state.permit_state :starting, :running, :stopping, :stopped, :failed
-    @state.permit_transition :stopped => :starting, :starting => :running, :running => :stopping, :stopping => :stopped
-    @state.permit_transition :starting => :failed # Failed to start
+    @state = Sqewer::StateLock.new
   end
   
   # Start listening on the queue, spin up a number of consumer threads that will execute the jobs.
@@ -146,7 +143,7 @@ class Sqewer::Worker
       break if n_live.zero?
       
       n_dead = @threads.length - n_live
-      @logger.info {"Waiting on threads to terminate, %d still alive, %d quit" % [n_live, n_dead] }
+      @logger.info { '[worker] Waiting on threads to terminate, %d still alive, %d quit' % [n_live, n_dead] }
       
       sleep 2
     end
@@ -188,7 +185,7 @@ class Sqewer::Worker
   rescue ThreadError # Queue is empty
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
   rescue => e # anything else, at or below StandardError that does not need us to quit
-    @logger.error { "[worker] Failed %s... with %s: %s" % [message[0..64].inspect, e.class, e.message] }
+    @logger.error { '[worker] Failed "%s..." with %s: %s' % [message.inspect[0..32], e.class, e.message] }
     e.backtrace.each { |s| @logger.error{"\t#{s}"} }
   end
 end

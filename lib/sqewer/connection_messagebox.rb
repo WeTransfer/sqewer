@@ -3,7 +3,8 @@ require 'thread'
 # A recorder for send_message and delete_message calls.
 # Will buffer those calls as if it were a Connection, and then execute
 # them within a synchronized mutex lock, to prevent concurrent submits
-# from the Connection object
+# to the Connection object, and, consequently, concurrent calls to the
+# SQS client.
 class Sqewer::ConnectionMessagebox
   class MethodCall < Struct.new(:method_name, :posargs, :kwargs)
     def perform(on)

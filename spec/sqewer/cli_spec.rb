@@ -39,7 +39,7 @@ describe Sqewer::CLI, :sqs => true, :wait => {timeout: 120} do
       stderr = Tempfile.new('worker-stderr')
       stderr.sync = true
     
-      pid = fork { $stderr.reopen(stderr); exec("ruby #{__dir__}/cli_app.rb") }
+      pid = fork { $stderr.reopen(stderr); $stderr.sync; exec("ruby #{__dir__}/cli_app.rb") }
   
       Thread.new do
         20.times do

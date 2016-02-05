@@ -13,21 +13,104 @@ describe Sqewer::Connection do
     it 'sends the message to the SQS client created with the URL given to the constructor' do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
-      expect(fake_sqs_client).to receive(:send_message).
-        with({:queue_url=>"https://fake-queue.com", :message_body=>"abcdef"})
+      expect(fake_sqs_client).to receive(:send_message_batch).and_return(double(failed: []))
       
       conn = described_class.new('https://fake-queue.com')
+      expect(conn).to receive(:send_multiple_messages).and_call_original
       conn.send_message('abcdef')
     end
     
     it 'passes keyword args to Aws::SQS::Client' do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
-      expect(fake_sqs_client).to receive(:send_message).
-        with({:queue_url=>"https://fake-queue.com", :message_body=>"abcdef", delay_seconds: 5})
+      expect(fake_sqs_client).to receive(:send_message_batch).and_return(double(failed: []))
       
       conn = described_class.new('https://fake-queue.com')
+      expect(conn).to receive(:send_multiple_messages).and_call_original
       conn.send_message('abcdef', delay_seconds: 5)
+    end
+  end
+  
+  describe '#send_multiple_messages' do
+    it 'sends 100 messages' do
+      fake_sqs_client = double('Client')
+      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      expect(fake_sqs_client).to receive(:send_message_batch).exactly(11).times {|kwargs|
+        expect(kwargs[:queue_url]).to eq("https://fake-queue.com")
+        expect(kwargs[:entries]).to be_kind_of(Array)
+        
+        entries = kwargs[:entries]
+        expect(entries.length).to be <= 10 # At most 10 messages per batch
+        entries.each do | entry |
+          expect(entry[:id]).to be_kind_of(String)
+          expect(entry[:message_body]).to be_kind_of(String)
+          expect(entry[:message_body]).to match(/Hello/)
+        end
+        double(failed: [])
+      }
+      
+      conn = described_class.new('https://fake-queue.com')
+      conn.send_multiple_messages do | b|
+        102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
+      end
+    end
+    
+    it 'raises an exception if any message fails sending' do
+      fake_sqs_client = double('Client')
+      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      expect(fake_sqs_client).to receive(:send_message_batch) {|kwargs|
+        double(failed: [double(message: 'Something went wrong at AWS')])
+      }
+      
+      conn = described_class.new('https://fake-queue.com')
+      expect {
+        conn.send_multiple_messages do | b|
+          102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
+        end
+      }.to raise_error(/messages failed to send/)
+    end
+  end
+  
+  describe '#delete_message' do
+    it 'deletes a single message'
+  end
+  
+  describe '#delete_multiple_messages' do
+    it 'deletes 100 messages' do
+      fake_sqs_client = double('Client')
+      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      expect(fake_sqs_client).to receive(:delete_message_batch).exactly(11).times {|kwargs|
+        expect(kwargs[:queue_url]).to eq("https://fake-queue.com")
+        expect(kwargs[:entries]).to be_kind_of(Array)
+        
+        entries = kwargs[:entries]
+        expect(entries.length).to be <= 10 # At most 10 messages per batch
+        entries.each do | entry |
+          expect(entry[:id]).to be_kind_of(String)
+          expect(entry[:receipt_handle]).to be_kind_of(String)
+        end
+        double(failed: [])
+      }
+      
+      conn = described_class.new('https://fake-queue.com')
+      conn.delete_multiple_messages do | b|
+        102.times { b.delete_message(SecureRandom.uuid) }
+      end
+    end
+    
+    it 'raises an exception if any message fails sending' do
+      fake_sqs_client = double('Client')
+      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      expect(fake_sqs_client).to receive(:delete_message_batch) {|kwargs|
+        double(failed: [double(message: 'Something went wrong at AWS')])
+      }
+      
+      conn = described_class.new('https://fake-queue.com')
+      expect {
+        conn.delete_multiple_messages do | b|
+          102.times { b.delete_message(SecureRandom.uuid) }
+        end
+      }.to raise_error(/messages failed to delete/)
     end
   end
   

@@ -17,71 +17,46 @@ require 'thread'
 # a messagebox will be able to buffer those sends and pack them in batches,
 # consequently performing less requests
 class Sqewer::ConnectionMessagebox
-  
-  class MethodCall < Struct.new(:method_name, :posargs, :kwargs)
-    def perform(on)
-      if kwargs && posargs
-        on.public_send(method_name, *posargs, **kwargs)
-      elsif kwargs
-        on.public_send(method_name, **kwargs)
-      elsif posargs
-        on.public_send(method_name, *posargs)
-      else
-        on.public_send(method_name)
-      end
-    end
-  end
-  
   def initialize(connection)
     @connection = connection
-    @calls = []
+    @deletes = []
+    @sends = []
     @mux = Mutex.new
-  end
-  
-  def receive_messages
-    @connection.receive_messages
   end
   
   # Saves the given body and the keyword arguments (such as delay_seconds) to be sent into the queue.
   # If there are more sends in the same flush, they will be batched using batched deletes.G
+  #
+  # @see {Connection#send_message}
   def send_message(message_body, **kwargs_for_send)
     @mux.synchronize {
-      @calls << MethodCall.new(:send_message, [message_body], kwargs_for_send)
+      @sends << [message_body, kwargs_for_send]
     }
   end
   
   # Saves the given identifier to be deleted from the queue. If there are more
   # deletes in the same flush, they will be batched using batched deletes.
+  #
+  # @see {Connection#delete_message}
   def delete_message(message_identifier)
     @mux.synchronize {
-      @calls << MethodCall.new(:delete_message, [message_identifier], nil)
+      @deletes << message_identifier
     }
   end
   
   # Flushes all the accumulated commands to the queue connection.
   # First the message sends are going to be flushed, then the message deletes.
+  # All of those will use batching where possible.
   def flush!
     @mux.synchronize do
-      sends, others = @calls.partition {|e| e.method_name == :send_message }
-      deletes, others = others.partition {|e| e.method_name == :delete_message }
-      
-      if sends.any?
-        @connection.send_multiple_messages do | buffer |
-          sends.each { |performable| performable.perform(buffer) }
-        end
+      @connection.send_multiple_messages do | buffer |
+        @sends.each { |body, kwargs| buffer.send_message(body, **kwargs) }
       end
       
-      if deletes.any?
-        @connection.delete_multiple_messages do | buffer |
-          deletes.each { |performable| performable.perform(buffer) }
-        end
+      @connection.delete_multiple_messages do | buffer |
+        @deletes.each { |id| buffer.delete_message(id) }
       end
-      
-      others.each do | other |
-        other.perform(@connection)
-      end
-      
-      @calls.length.tap { @calls.clear }
+      (@sends.length + @deletes.length).tap{ @sends.clear; @deletes.clear }
     end
   end
 end

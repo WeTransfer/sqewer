@@ -202,3 +202,19 @@ You need to set up a `MiddlewareStack` and supply it to the `Worker` when instan
     stack = Sqewer::MiddlewareStack.new
     stack << MyWrapper.new
     w = Sqewer::Worker.new(middleware_stack: stack)
+
+# Execution guarantees
+
+As a queue worker system, Sqewer makes a number of guarantees, which are as solid as the Ruby's
+`ensure` clause.
+
+  * When a job succeeds (raises no exceptions), it will be deleted from the queue
+  * When a job submits other jobs, and succeeds, the submitted jobs will be sent to the queue
+  * When a job, or any wrapper routing of the job execution,
+    raises any exception, the job will not be deleted
+  * When a submit spun off from the job, or the deletion of the job itself,
+    cause an exception, the job will not be deleted
+
+Use those guarantees to your advantage. Always make your jobs horizontally repeatable (if two hosts
+start at the same job at the same time), idempotent (a job should be able to run twice without errors),
+and traceable (make good use of logging).

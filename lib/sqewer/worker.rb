@@ -189,7 +189,6 @@ class Sqewer::Worker
   
   def handle_message(message)
     return unless message.receipt_handle
-    Thread.current[:queue_messsage] = '%s...' %message.body[0..32]
     return @connection.delete_message(message.receipt_handle) unless message.has_body?
     @isolator.perform(self, message)
     # The message delete happens within the Isolator

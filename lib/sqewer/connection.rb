@@ -89,7 +89,7 @@ class Sqewer::Connection
   
   # Send multiple messages. If any messages fail to send, an exception will be raised.
   #
-  # @yields [#send_message] the object you can send messages through (will be flushed at method return)
+  # @yield [#send_message] the object you can send messages through (will be flushed at method return)
   # @return [void]
   def send_multiple_messages
     buffer = SendBuffer.new
@@ -115,7 +115,7 @@ class Sqewer::Connection
   
   # Deletes multiple messages after they all have been succesfully decoded and processed.
   #
-  # @yields [#delete_message] an object you can delete an individual message through
+  # @yield [#delete_message] an object you can delete an individual message through
   # @return [void]
   def delete_multiple_messages
     buffer = DeleteBuffer.new

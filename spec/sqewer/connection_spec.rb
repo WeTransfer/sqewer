@@ -29,6 +29,8 @@ describe Sqewer::Connection do
       expect(conn).to receive(:send_multiple_messages).and_call_original
       conn.send_message('abcdef', delay_seconds: 5)
     end
+    
+    it 'retries on networking errors'
   end
   
   describe '#send_multiple_messages' do
@@ -69,6 +71,9 @@ describe Sqewer::Connection do
         end
       }.to raise_error(/messages failed to send/)
     end
+    
+    it 'retries on networking errors'
+    
   end
   
   describe '#delete_message' do
@@ -112,6 +117,8 @@ describe Sqewer::Connection do
         end
       }.to raise_error(/messages failed to delete/)
     end
+    
+    it 'retries on networking errors'
   end
   
   describe '#receive_messages' do
@@ -132,5 +139,7 @@ describe Sqewer::Connection do
       messages = s.receive_messages
       expect(messages.length).to eq(5)
     end
+    
+    it 'retries on networking errors'
   end
 end

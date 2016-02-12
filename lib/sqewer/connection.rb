@@ -40,7 +40,6 @@ class Sqewer::Connection
   #
   # @return [Array<Message>] an array of Message objects 
   def receive_messages
-    client = ::Aws::SQS::Client.new
     response = client.receive_message(queue_url: @queue_url,
       wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: 10)
     response.messages.map do | message |
@@ -58,6 +57,7 @@ class Sqewer::Connection
     send_multiple_messages {|via| via.send_message(message_body, **kwargs_for_send) }
   end
   
+  # Stores the messages for the SQS queue (both deletes and sends), and yields them in allowed batch sizes
   class MessageBuffer < Struct.new(:messages)
     MAX_RECORDS = 10
     def initialize
@@ -68,6 +68,7 @@ class Sqewer::Connection
     end
   end
   
+  # Saves the messages to send to the SQS queue
   class SendBuffer < MessageBuffer
     def send_message(message_body, **kwargs_for_send)
       # The "id" is only valid _within_ the request, and is used when
@@ -78,6 +79,7 @@ class Sqewer::Connection
     end
   end
   
+  # Saves the receipt handles to batch-delete from the SQS queue
   class DeleteBuffer < MessageBuffer
     def delete_message(receipt_handle)
       # The "id" is only valid _within_ the request, and is used when
@@ -94,7 +96,6 @@ class Sqewer::Connection
   def send_multiple_messages
     buffer = SendBuffer.new
     yield(buffer)
-    client = ::Aws::SQS::Client.new
     buffer.each_batch do | batch |
       resp = client.send_message_batch(queue_url: @queue_url, entries: batch)
       failed = resp.failed
@@ -121,7 +122,6 @@ class Sqewer::Connection
     buffer = DeleteBuffer.new
     yield(buffer)
     
-    client = ::Aws::SQS::Client.new
     buffer.each_batch do | batch |
       resp = client.delete_message_batch(queue_url: @queue_url, entries: batch)
       failed = resp.failed
@@ -130,5 +130,31 @@ class Sqewer::Connection
         raise "%d messages failed to delete (first error was %s)" % [failed.length, err]
       end
     end
+  end
+  
+  private
+  
+  class RetryWrapper < Struct.new(:sqs_client)
+    MAX_RETRIES = 1000
+    # Provide retrying wrappers for all the methods of Aws::SQS::Client that we actually use
+    [:delete_message_batch, :send_message_batch, :receive_message].each do |retriable_method_name|
+      define_method(retriable_method_name) do |*args, **kwargs|
+        tries = 1
+        begin
+          sqs_client.public_send(retriable_method_name, *args, **kwargs)
+        rescue Seahorse::Client::NetworkingError => e
+          if (tries += 1) >= MAX_RETRIES
+            raise(e)
+          else
+            sleep 0.5
+            retry
+          end
+        end
+      end
+    end
+  end
+  
+  def client
+    @client ||= RetryWrapper.new(Aws::SQS::Client.new)
   end
 end

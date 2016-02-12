@@ -159,7 +159,7 @@ arguments:
 
     class CustomWorker < Sqewer::Worker
       def initialize(**kwargs)
-        super(serializer: CustomSerializer.mnew, ..., **kwargs)
+        super(serializer: CustomSerializer.new, ..., **kwargs)
       end
     end
 

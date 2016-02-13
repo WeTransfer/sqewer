@@ -184,7 +184,7 @@ you generate. For example, you could use a pipe. But in a more general case some
           end
         end
         
-        _, status = Process.wait2
+        _, status = Process.wait2(pid)
         
         # Raise an error in the parent process to signal Sqewer that the job failed
         # if the child exited with a non-0 status

@@ -8,7 +8,7 @@ describe Sqewer::Worker, :sqs => true do
   
   it 'has all the necessary attributes' do
     attrs = [:logger, :connection, :serializer, :middleware_stack, 
-      :execution_context_class, :submitter_class, :isolator, :num_threads]
+      :execution_context_class, :submitter_class, :num_threads]
     default_worker = described_class.default
     attrs.each do | attr_name |
       expect(default_worker).to respond_to(attr_name)
@@ -93,39 +93,6 @@ describe Sqewer::Worker, :sqs => true do
       client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
       
       worker = described_class.new(logger: test_logger, num_threads: 8)
-      
-      worker.start
-      
-      begin
-        wait_for { File.exist?('initial-job-run') }.to eq(true)
-        wait_for { File.exist?('secondary-job-run') }.to eq(true)
-        
-        File.unlink('initial-job-run')
-        File.unlink('secondary-job-run')
-      ensure
-        worker.stop
-      end
-    end
-    
-    it 'sets up the processing pipeline so that jobs can execute in sequence (with processes)' do
-      class SecondaryJob
-        def run
-          File.open('secondary-job-run','w') {}
-        end
-      end
-      
-      class InitialJob
-        def run(executor)
-          File.open('initial-job-run','w') {}
-          executor.submit!(SecondaryJob.new)
-        end
-      end
-      
-      payload = JSON.dump({job_class: 'InitialJob'})
-      client = Aws::SQS::Client.new
-      client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
-      
-      worker = described_class.new(logger: test_logger, num_threads: 8, isolator: Sqewer::Isolator.process)
       
       worker.start
       

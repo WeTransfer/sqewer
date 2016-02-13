@@ -171,13 +171,26 @@ started with your custom Worker of choice:
 
 ## Threads versus processes
 
-You can elect to use process isolation per job. Each job will then run in a forked process, on which
-the main worker process will `wait()`. To do so, pass `Sqewer::Isolator.process` as the `isolator:`
-option to the Worker
+sqewer uses threads. If you need to run your job from a forked subprocess (primarily for memory
+management reasons) you can do so from the `run` method. Note that you might need to apply extra gymnastics
+to submit extra jobs in this case, as it is the job of the controlling worker thread to submit the messages
+you generate. For example, you could use a pipe. But in a more general case something like this can be used:
 
-    proc_worker = Sqewer::Worker.new(isolator: Sqewer::Isolator.process)
-
-By default the system is working with threads only, as processes obviously have some overhead.
+    class MyJob
+      def run
+        pid = fork do
+          SomeRemoteService.reconnect # you are in the child process now
+          ActiveRAMGobbler.fetch_stupendously_many_things.each do |...|
+          end
+        end
+        
+        _, status = Process.wait2
+        
+        # Raise an error in the parent process to signal Sqewer that the job failed
+        # if the child exited with a non-0 status
+        raise "Child process crashed" unless status.exitstatus && status.exitstatus.zero?
+      end
+    end
 
 ## Execution and serialization wrappers (middleware)
 

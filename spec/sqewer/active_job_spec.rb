@@ -1,5 +1,6 @@
 require_relative '../spec_helper'
 require 'active_job'
+require_relative '../../lib/sqewer/extensions/active_job_adapter'
 
 class CreateFileJob < ActiveJob::Base
   def perform(file)

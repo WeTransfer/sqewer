@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 require_relative '../lib/sqewer'
+require_relative '../lib/sqewer/extensions/active_job_adapter'
+require_relative '../lib/sqewer/extensions/rails'
 
 # Load rails
 Sqewer.load_rails

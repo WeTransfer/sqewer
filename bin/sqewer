@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
 require_relative '../lib/sqewer'
 
+# Load your application code here:
+# require 'my_application'
+
 Sqewer::CLI.start

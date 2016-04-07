@@ -37,7 +37,9 @@ module ActiveJob
 
         # Runs the contained ActiveJob.
         def run
-          Base.execute @job.stringify_keys
+          ActiveRecord::Base.connection_pool.with_connection do
+            Base.execute @job.stringify_keys
+          end
         end
       end
 

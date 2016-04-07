@@ -9,5 +9,3 @@ module Sqewer
     Sqewer::Submitter.default.submit!(*jobs, **options)
   end
 end
-
-require 'sqewer/extensions/active_job_adapter' if defined?(::ActiveJob)

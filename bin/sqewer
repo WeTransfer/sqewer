@@ -1,7 +1,4 @@
 #!/usr/bin/env ruby
 require_relative '../lib/sqewer'
 
-# load rails
-Skewer.load_rails
-# ...and start
-Sqewer::CLI.start(Sqewer::Worker.new(logger: Rails.logger))
+Sqewer::CLI.start

@@ -13,8 +13,8 @@ Gem::Specification.new do |s|
   s.authors = ["Julik Tarkhanov"]
   s.date = "2016-04-07"
   s.description = "Process jobs from SQS"
-  s.email = "le@julik.nl"
-  s.executables = ["sqewer"]
+  s.email = "me@julik.nl"
+  s.executables = ["sqewer", "sqewer_rails"]
   s.extra_rdoc_files = [
     "README.md"
   ]
@@ -27,6 +27,8 @@ Gem::Specification.new do |s|
     "Gemfile",
     "README.md",
     "Rakefile",
+    "bin/sqewer",
+    "bin/sqewer_rails",
     "example.env",
     "lib/sqewer.rb",
     "lib/sqewer/atomic_counter.rb",
@@ -37,6 +39,7 @@ Gem::Specification.new do |s|
     "lib/sqewer/contrib/performable.rb",
     "lib/sqewer/execution_context.rb",
     "lib/sqewer/extensions/active_job_adapter.rb",
+    "lib/sqewer/extensions/rails.rb",
     "lib/sqewer/middleware_stack.rb",
     "lib/sqewer/null_logger.rb",
     "lib/sqewer/serializer.rb",
@@ -62,7 +65,7 @@ Gem::Specification.new do |s|
   ]
   s.homepage = "https://gitlab.wetransfer.net/julik/sqewer"
   s.licenses = ["MIT"]
-  s.rubygems_version = "2.4.5.1"
+  s.rubygems_version = "2.2.2"
   s.summary = "A full-featured library for all them worker needs"
 
   if s.respond_to? :specification_version then
@@ -82,6 +85,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_development_dependency(%q<bundler>, ["~> 1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 2.0.1"])
+      s.add_development_dependency(%q<activerecord>, ["~> 4.2"])
       s.add_development_dependency(%q<activejob>, ["~> 4.2.6"])
     else
       s.add_dependency(%q<aws-sdk>, ["~> 2"])
@@ -97,6 +101,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_dependency(%q<bundler>, ["~> 1.0"])
       s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
+      s.add_dependency(%q<activerecord>, ["~> 4.2"])
       s.add_dependency(%q<activejob>, ["~> 4.2.6"])
     end
   else
@@ -113,6 +118,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rdoc>, ["~> 3.12"])
     s.add_dependency(%q<bundler>, ["~> 1.0"])
     s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
+    s.add_dependency(%q<activerecord>, ["~> 4.2"])
     s.add_dependency(%q<activejob>, ["~> 4.2.6"])
   end
 end

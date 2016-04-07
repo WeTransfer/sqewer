@@ -3,10 +3,6 @@
 This document tries to answer some questions that may arise when reading or using the library. Hopefully
 this can provide some answers with regards to how things are put together.
 
-## Why no ActiveJob? 
-
-An adapter will be added in the future
-
 ## Why separate `new` and `run` methods instead of just `perform`?
 
 Because the job needs access to the execution context of the worker. It turned out that keeping the context

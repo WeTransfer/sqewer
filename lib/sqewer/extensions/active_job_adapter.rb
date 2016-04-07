@@ -1,3 +1,5 @@
+require 'active_record'
+
 # ActiveJob docs: http://edgeguides.rubyonrails.org/active_job_basics.html
 # Example adapters ref: https://github.com/rails/rails/tree/master/activejob/lib/active_job/queue_adapters
 module ActiveJob
@@ -37,7 +39,11 @@ module ActiveJob
 
         # Runs the contained ActiveJob.
         def run
-          ActiveRecord::Base.connection_pool.with_connection do
+          if ActiveRecord::Base.connected?
+            ActiveRecord::Base.connection_pool.with_connection do
+              Base.execute @job.stringify_keys
+            end
+          else
             Base.execute @job.stringify_keys
           end
         end

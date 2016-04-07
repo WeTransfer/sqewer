@@ -14,7 +14,7 @@ module ActiveJob
       class Performable
 
         # Creates a new Performable using the passed ActiveJob object. The resulting Performable
-        # can be sent to any Skewer queue.
+        # can be sent to any Sqewer queue.
         #
         # @param active_job_worker[ActiveJob::Job] the job you want to convert
         def self.from_active_job(active_job_worker)

@@ -1,4 +1,4 @@
-module Skewer
+module Sqewer
   def self.load_rails
     # Adapted from: https://github.com/mperham/sidekiq/blob/master/lib/sidekiq/cli.rb
 

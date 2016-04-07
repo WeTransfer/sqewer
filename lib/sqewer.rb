@@ -1,6 +1,11 @@
 # The enclosing module for the library
 module Sqewer
-  Dir.glob(__dir__ + '/**/*.rb').each {|p| require p unless p == __FILE__ }
+  # Eager-load everything except extensions
+  Dir.glob(__dir__ + '/**/*.rb').each do |path|
+    if path != __FILE__ && File.dirname(path) !~ /\/extensions$/
+      require path
+    end
+  end
   
   # Shortcut access to Submitter#submit.
   #

@@ -11,9 +11,10 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Julik Tarkhanov"]
-  s.date = "2016-02-13"
+  s.date = "2016-04-07"
   s.description = "Process jobs from SQS"
-  s.email = "me@julik.nl"
+  s.email = "le@julik.nl"
+  s.executables = ["sqewer"]
   s.extra_rdoc_files = [
     "README.md"
   ]
@@ -35,6 +36,7 @@ Gem::Specification.new do |s|
     "lib/sqewer/contrib/appsignal_wrapper.rb",
     "lib/sqewer/contrib/performable.rb",
     "lib/sqewer/execution_context.rb",
+    "lib/sqewer/extensions/active_job_adapter.rb",
     "lib/sqewer/middleware_stack.rb",
     "lib/sqewer/null_logger.rb",
     "lib/sqewer/serializer.rb",
@@ -44,6 +46,7 @@ Gem::Specification.new do |s|
     "lib/sqewer/version.rb",
     "lib/sqewer/worker.rb",
     "spec/spec_helper.rb",
+    "spec/sqewer/active_job_spec.rb",
     "spec/sqewer/atomic_counter_spec.rb",
     "spec/sqewer/cli_app.rb",
     "spec/sqewer/cli_spec.rb",
@@ -59,7 +62,7 @@ Gem::Specification.new do |s|
   ]
   s.homepage = "https://gitlab.wetransfer.net/julik/sqewer"
   s.licenses = ["MIT"]
-  s.rubygems_version = "2.2.2"
+  s.rubygems_version = "2.4.5.1"
   s.summary = "A full-featured library for all them worker needs"
 
   if s.respond_to? :specification_version then
@@ -79,6 +82,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_development_dependency(%q<bundler>, ["~> 1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 2.0.1"])
+      s.add_development_dependency(%q<activejob>, ["~> 4.2.6"])
     else
       s.add_dependency(%q<aws-sdk>, ["~> 2"])
       s.add_dependency(%q<very_tiny_state_machine>, [">= 0"])
@@ -93,6 +97,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_dependency(%q<bundler>, ["~> 1.0"])
       s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
+      s.add_dependency(%q<activejob>, ["~> 4.2.6"])
     end
   else
     s.add_dependency(%q<aws-sdk>, ["~> 2"])
@@ -108,6 +113,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rdoc>, ["~> 3.12"])
     s.add_dependency(%q<bundler>, ["~> 1.0"])
     s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
+    s.add_dependency(%q<activejob>, ["~> 4.2.6"])
   end
 end
 

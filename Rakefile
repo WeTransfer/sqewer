@@ -22,6 +22,7 @@ Jeweler::Tasks.new do |gem|
   gem.summary = %Q{A full-featured library for all them worker needs}
   gem.email = "me@julik.nl"
   gem.authors = ["Julik Tarkhanov"]
+  gem.executables = ["sqewer"]
   # dependencies defined in Gemfile
 end
 Jeweler::RubygemsDotOrgTasks.new

@@ -15,7 +15,7 @@ RSpec.configure do |config|
   config.order = 'random'
   config.around :each do | example |
     if example.metadata[:sqs]
-      queue_name = 'conveyor-belt-test-queue-%s' % SecureRandom.hex(6)
+      queue_name = 'sqewer-test-queue-%s' % SecureRandom.hex(6)
       client = Aws::SQS::Client.new
       resp = client.create_queue(queue_name: queue_name)
       ENV['SQS_QUEUE_URL'] = resp.queue_url

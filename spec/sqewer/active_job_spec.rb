@@ -97,11 +97,14 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     expect(user.active).to eq(false)
     ActivateUser.perform_later(user)
     w = Sqewer::Worker.default
-    w.start
-    sleep 4
-    user.reload
-    expect(user.active).to eq(true)
-    w.stop
+    begin
+      w.start
+      sleep 4
+      user.reload
+      expect(user.active).to eq(true)
+    ensure
+      w.stop
+    end
   end
 
 end

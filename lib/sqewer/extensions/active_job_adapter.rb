@@ -1,5 +1,3 @@
-require 'active_record'
-
 # ActiveJob docs: http://edgeguides.rubyonrails.org/active_job_basics.html
 # Example adapters ref: https://github.com/rails/rails/tree/master/activejob/lib/active_job/queue_adapters
 module ActiveJob
@@ -40,14 +38,23 @@ module ActiveJob
         # Runs the contained ActiveJob.
         def run
           job = ActiveSupport::HashWithIndifferentAccess.new(@job)
-          if ActiveRecord::Base.connected?
-            ActiveRecord::Base.connection_pool.with_connection do
-              Base.execute job
-            end
+          if active_record_defined_and_connected?
+            with_active_record_connection_from_pool { Base.execute(job) }
           else
-            Base.execute job
+            Base.execute(job)
           end
         end
+        
+        private
+        
+        def with_active_record_connection_from_pool
+          ActiveRecord::Base.connection_pool.with_connection { yield }
+        end
+        
+        def active_record_defined_and_connected?
+          defined?(ActiveRecord) && ActiveRecord::Base.connected?
+        end
+        
       end
 
       class << self

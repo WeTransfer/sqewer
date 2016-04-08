@@ -22,6 +22,11 @@ describe Sqewer::Worker, :sqs => true do
     expect(default_worker).to respond_to(:stop)
   end
     
+  it 'instantiates a new worker object on every call to .default' do
+    workers = (1..10).map { described_class.default }
+    expect(workers.uniq.length).to eq(10)
+  end
+  
   it 'instantiates a Logger to STDERR by default' do
     expect(Logger).to receive(:new).with(STDERR)
     worker = described_class.new

@@ -33,11 +33,11 @@ class Sqewer::Worker
   # @return [Fixnum] the number of worker threads set up for this Worker
   attr_reader :num_threads
 
-  # Returns the default Worker instance, configured based on the default components
+  # Returns a Worker instance, configured based on the default components
   #
   # @return [Sqewer::Worker]
   def self.default
-    @default ||= new
+    new
   end
 
   # Creates a new Worker. The Worker, unlike it is in the Rails tradition, is only responsible for

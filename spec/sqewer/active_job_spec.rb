@@ -1,5 +1,8 @@
 require_relative '../spec_helper'
+require 'securerandom'
 require 'active_job'
+require 'active_record'
+require 'global_id'
 require_relative '../../lib/sqewer/extensions/active_job_adapter'
 
 class CreateFileJob < ActiveJob::Base
@@ -14,12 +17,46 @@ class DeleteFileJob < ActiveJob::Base
   end
 end
 
+class ActivateUser < ActiveJob::Base
+  def perform(user)
+    puts user
+    user.active = true
+    user.save!
+  end
+end
+
+GlobalID.app = 'test-app'
+class User < ActiveRecord::Base
+  include GlobalID::Identification
+end
+
 describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
   let(:file) { "#{Dir.mktmpdir}/file_active_job_test_1" }
   let(:client) { ::Aws::SQS::Client.new }
 
-  before do
+  after :all do
+    # Ensure database files get killed afterwards
+    File.unlink(ActiveRecord::Base.connection_config[:database]) rescue nil
+  end
+
+  before :all do
     ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter
+
+    test_seed_name = SecureRandom.hex(4)
+    ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: ('master_db_%s.sqlite3' % test_seed_name))
+
+    ActiveRecord::Migration.suppress_messages do
+      ActiveRecord::Schema.define(:version => 1) do
+        create_table :users do |t|
+          t.string :email, :null => true
+          t.boolean :active, default: false
+          t.timestamps :null => false
+        end
+      end
+    end
+  end
+
+  before do
     @queue_url_hash = { queue_url: ENV['SQS_QUEUE_URL'] }
   end
 
@@ -54,6 +91,18 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     ensure
       w.stop
     end
+  end
+
+  it "serializes and deserializes active record using GlobalID" do
+    user = User.create(email: 'test@wetransfer.com')
+    expect(user.active).to eq(false)
+    ActivateUser.perform_later(user)
+    w = Sqewer::Worker.default
+    w.start
+    sleep 4
+    user.reload
+    expect(user.active).to eq(true)
+    w.stop
   end
 
 end

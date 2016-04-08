@@ -39,12 +39,13 @@ module ActiveJob
 
         # Runs the contained ActiveJob.
         def run
+          job = ActiveSupport::HashWithIndifferentAccess.new(@job)
           if ActiveRecord::Base.connected?
             ActiveRecord::Base.connection_pool.with_connection do
-              Base.execute @job.stringify_keys
+              Base.execute job
             end
           else
-            Base.execute @job.stringify_keys
+            Base.execute job
           end
         end
       end

@@ -18,4 +18,6 @@ group :development do
   gem "jeweler", "~> 2.0.1"
   gem 'activerecord', '~> 4.2'
   gem 'activejob', '~> 4.2.6'
+  gem 'sqlite3'
+  # gem 'pry'
 end

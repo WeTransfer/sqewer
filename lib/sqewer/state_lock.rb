@@ -13,11 +13,11 @@ class Sqewer::StateLock < SimpleDelegator
     m.permit_transition :starting => :failed # Failed to start
     __setobj__(m)
   end
-  
+
   def in_state?(some_state)
     @m.synchronize { __getobj__.in_state?(some_state) }
   end
-    
+
   def transition!(to_state)
     @m.synchronize { __getobj__.transition!(to_state) }
   end

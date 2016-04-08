@@ -14,14 +14,14 @@ class Sqewer::ExecutionContext
     @params = {}
     extra_variables.each_pair{|k, v| self[k]  = v }
   end
-  
+
   # Submits one or more jobs to the queue
   #
   # @see {Sqewer::Submitter#submit!}
   def submit!(job, **execution_options)
     @submitter.submit!(job, **execution_options)
   end
-  
+
   # Sets a key in the execution environment
   #
   # @param key[#to_s] the key to set
@@ -29,14 +29,14 @@ class Sqewer::ExecutionContext
   def []=(key, value)
     @params[key.to_s] = value
   end
-  
+
   # Returns a key of the execution environment by name
   #
   # @param key[#to_s] the key to get
   def [](key)
     @params[key.to_s]
   end
-  
+
   # Returns a key of the execution environment, or executes the given block
   # if the key is not set
   #
@@ -45,7 +45,7 @@ class Sqewer::ExecutionContext
   def fetch(key, &blk)
     @params.fetch(key.to_s, &blk)
   end
-  
+
   # Returns the logger set in the execution environment, or
   # the NullLogger if no logger is set. Can be used to supply
   # a logger prefixed with job parameters per job.

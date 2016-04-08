@@ -8,18 +8,18 @@
 class Sqewer::Connection
   DEFAULT_TIMEOUT_SECONDS = 5
   BATCH_RECEIVE_SIZE = 10
-  
+
   # A wrapper for most important properties of the received message
   class Message < Struct.new(:receipt_handle, :body)
     def inspect
       body.inspect
     end
-    
+
     def has_body?
       body && !body.empty?
     end
   end
-  
+
   # Returns the default adapter, connected to the queue set via the `SQS_QUEUE_URL`
   # environment variable.
   def self.default
@@ -27,7 +27,7 @@ class Sqewer::Connection
   rescue KeyError => e
     raise "SQS_QUEUE_URL not set in the environment. This is the queue URL that the default that Sqewer uses"
   end
-  
+
   # Initializes a new adapter, with access to the SQS queue at the given URL.
   #
   # @param queue_url[String] the SQS queue URL (the URL can be copied from your AWS console)
@@ -35,7 +35,7 @@ class Sqewer::Connection
     require 'aws-sdk'
     @queue_url = queue_url
   end
-  
+
   # Receive at most 10 messages from the queue, and return the array of Message objects.
   #
   # @return [Array<Message>] an array of Message objects 
@@ -46,7 +46,7 @@ class Sqewer::Connection
       Message.new(message.receipt_handle, message.body)
     end
   end
-  
+
   # Send a message to the backing queue
   #
   # @param message_body[String] the message to send
@@ -56,7 +56,7 @@ class Sqewer::Connection
   def send_message(message_body, **kwargs_for_send)
     send_multiple_messages {|via| via.send_message(message_body, **kwargs_for_send) }
   end
-  
+
   # Stores the messages for the SQS queue (both deletes and sends), and yields them in allowed batch sizes
   class MessageBuffer < Struct.new(:messages)
     MAX_RECORDS = 10
@@ -67,7 +67,7 @@ class Sqewer::Connection
       messages.each_slice(MAX_RECORDS){|batch| yield(batch)}
     end
   end
-  
+
   # Saves the messages to send to the SQS queue
   class SendBuffer < MessageBuffer
     def send_message(message_body, **kwargs_for_send)
@@ -78,7 +78,7 @@ class Sqewer::Connection
       messages << m
     end
   end
-  
+
   # Saves the receipt handles to batch-delete from the SQS queue
   class DeleteBuffer < MessageBuffer
     def delete_message(receipt_handle)
@@ -88,7 +88,7 @@ class Sqewer::Connection
       messages << m
     end
   end
-  
+
   # Send multiple messages. If any messages fail to send, an exception will be raised.
   #
   # @yield [#send_message] the object you can send messages through (will be flushed at method return)
@@ -105,7 +105,7 @@ class Sqewer::Connection
       end
     end
   end
-  
+
   # Deletes a message after it has been succesfully decoded and processed
   #
   # @param message_identifier[String] the ID of the message to delete. For SQS, it is the receipt handle
@@ -113,7 +113,7 @@ class Sqewer::Connection
   def delete_message(message_identifier)
     delete_multiple_messages {|via| via.delete_message(message_identifier) }
   end
-  
+
   # Deletes multiple messages after they all have been succesfully decoded and processed.
   #
   # @yield [#delete_message] an object you can delete an individual message through
@@ -121,7 +121,7 @@ class Sqewer::Connection
   def delete_multiple_messages
     buffer = DeleteBuffer.new
     yield(buffer)
-    
+
     buffer.each_batch do | batch |
       resp = client.delete_message_batch(queue_url: @queue_url, entries: batch)
       failed = resp.failed
@@ -131,9 +131,9 @@ class Sqewer::Connection
       end
     end
   end
-  
+
   private
-  
+
   class RetryWrapper < Struct.new(:sqs_client)
     MAX_RETRIES = 1000
     # Provide retrying wrappers for all the methods of Aws::SQS::Client that we actually use
@@ -153,7 +153,7 @@ class Sqewer::Connection
       end
     end
   end
-  
+
   def client
     @client ||= RetryWrapper.new(Aws::SQS::Client.new)
   end

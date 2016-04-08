@@ -20,7 +20,7 @@ module Sqewer::CLI
         # Signal not supported
       end
     end
-    
+
     begin
       worker.start
       # The worker is non-blocking, so in the main CLI process we select() on the signal
@@ -34,7 +34,7 @@ module Sqewer::CLI
       exit 1
     end
   end
-  
+
   def handle_signal(worker, sig)
     case sig
     when 'USR1', 'TERM'
@@ -46,6 +46,6 @@ module Sqewer::CLI
       raise Interrupt
     end
   end
-  
+
   extend self
 end

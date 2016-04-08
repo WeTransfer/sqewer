@@ -23,7 +23,7 @@ class Sqewer::ConnectionMessagebox
     @sends = []
     @mux = Mutex.new
   end
-  
+
   # Saves the given body and the keyword arguments (such as delay_seconds) to be sent into the queue.
   # If there are more sends in the same flush, they will be batched using batched deletes.G
   #
@@ -33,7 +33,7 @@ class Sqewer::ConnectionMessagebox
       @sends << [message_body, kwargs_for_send]
     }
   end
-  
+
   # Saves the given identifier to be deleted from the queue. If there are more
   # deletes in the same flush, they will be batched using batched deletes.
   #
@@ -43,7 +43,7 @@ class Sqewer::ConnectionMessagebox
       @deletes << message_identifier
     }
   end
-  
+
   # Flushes all the accumulated commands to the queue connection.
   # First the message sends are going to be flushed, then the message deletes.
   # All of those will use batching where possible.
@@ -52,7 +52,7 @@ class Sqewer::ConnectionMessagebox
       @connection.send_multiple_messages do | buffer |
         @sends.each { |body, kwargs| buffer.send_message(body, **kwargs) }
       end
-      
+
       @connection.delete_multiple_messages do | buffer |
         @deletes.each { |id| buffer.delete_message(id) }
       end

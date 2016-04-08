@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Julik Tarkhanov"]
-  s.date = "2016-04-07"
+  s.date = "2016-04-08"
   s.description = "Process jobs from SQS"
   s.email = "me@julik.nl"
   s.executables = ["sqewer", "sqewer_rails"]
@@ -35,11 +35,11 @@ Gem::Specification.new do |s|
     "lib/sqewer/cli.rb",
     "lib/sqewer/connection.rb",
     "lib/sqewer/connection_messagebox.rb",
-    "lib/sqewer/contrib/appsignal_wrapper.rb",
-    "lib/sqewer/contrib/performable.rb",
     "lib/sqewer/execution_context.rb",
     "lib/sqewer/extensions/active_job_adapter.rb",
+    "lib/sqewer/extensions/appsignal_wrapper.rb",
     "lib/sqewer/extensions/rails.rb",
+    "lib/sqewer/extensions/railtie.rb",
     "lib/sqewer/middleware_stack.rb",
     "lib/sqewer/null_logger.rb",
     "lib/sqewer/serializer.rb",
@@ -87,6 +87,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<jeweler>, ["~> 2.0.1"])
       s.add_development_dependency(%q<activerecord>, ["~> 4.2"])
       s.add_development_dependency(%q<activejob>, ["~> 4.2.6"])
+      s.add_development_dependency(%q<sqlite3>, [">= 0"])
     else
       s.add_dependency(%q<aws-sdk>, ["~> 2"])
       s.add_dependency(%q<very_tiny_state_machine>, [">= 0"])
@@ -103,6 +104,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
       s.add_dependency(%q<activerecord>, ["~> 4.2"])
       s.add_dependency(%q<activejob>, ["~> 4.2.6"])
+      s.add_dependency(%q<sqlite3>, [">= 0"])
     end
   else
     s.add_dependency(%q<aws-sdk>, ["~> 2"])
@@ -120,6 +122,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
     s.add_dependency(%q<activerecord>, ["~> 4.2"])
     s.add_dependency(%q<activejob>, ["~> 4.2.6"])
+    s.add_dependency(%q<sqlite3>, [">= 0"])
   end
 end
 

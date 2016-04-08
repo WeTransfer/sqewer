@@ -8,7 +8,6 @@ module Sqewer
     ::Rails::Application.initializer 'sqewer.eager_load' do
       ::Rails.application.config.eager_load = true
     end
-    require 'sqewer/extensions/active_job_adapter' if defined?(::ActiveJob)
     require File.expand_path('config/environment.rb')
   end
 end

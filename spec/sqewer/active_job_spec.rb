@@ -19,7 +19,6 @@ end
 
 class ActivateUser < ActiveJob::Base
   def perform(user)
-    puts user
     user.active = true
     user.save!
   end

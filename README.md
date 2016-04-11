@@ -58,6 +58,10 @@ For more detailed usage information, see [DETAILS.md](./DETAILS.md)
 
 Please see [FAQ.md](./FAQ.md). This might explain some decisions behind the library in greater detail.
 
+## Usage with Rails via ActiveJob
+
+Please see [ACTIVE_JOB.md](./ACTIVE_JOB.md) for the exact description.
+
 ## Contributing to the library
  
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.

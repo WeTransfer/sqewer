@@ -82,13 +82,13 @@ describe Sqewer::Worker, :sqs => true do
     it 'sets up the processing pipeline so that jobs can execute in sequence (with threads)' do
       class SecondaryJob
         def run
-          File.open('secondary-job-run','w') {}
+          File.open(File.join(Dir.tmpdir, 'secondary-job-run'),'w') {}
         end
       end
       
       class InitialJob
         def run(executor)
-          File.open('initial-job-run','w') {}
+          File.open(File.join(Dir.tmpdir, 'initial-job-run'),'w') {}
           executor.submit!(SecondaryJob.new)
         end
       end
@@ -102,11 +102,8 @@ describe Sqewer::Worker, :sqs => true do
       worker.start
       
       begin
-        wait_for { File.exist?('initial-job-run') }.to eq(true)
-        wait_for { File.exist?('secondary-job-run') }.to eq(true)
-        
-        File.unlink('initial-job-run')
-        File.unlink('secondary-job-run')
+        wait_for { File.exist?(File.join(Dir.tmpdir, 'initial-job-run')) }.to eq(true)
+        wait_for { File.exist?(File.join(Dir.tmpdir, 'secondary-job-run')) }.to eq(true)
       ensure
         worker.stop
       end

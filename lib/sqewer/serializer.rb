@@ -14,7 +14,6 @@ class Sqewer::Serializer
   end
 
   AnonymousJobClass = Class.new(StandardError)
-  ArityMismatch = Class.new(ArgumentError)
 
   # Instantiate a Job object from a message body string. If the
   # returned result is `nil`, the job will be skipped.
@@ -25,30 +24,36 @@ class Sqewer::Serializer
     job_ticket_hash = JSON.parse(message_body, symbolize_names: true)
     raise "Job ticket must unmarshal into a Hash" unless job_ticket_hash.is_a?(Hash)
 
-    job_ticket_hash = convert_old_ticket_format(job_ticket_hash) if job_ticket_hash[:job_class]
-
     # Use fetch() to raise a descriptive KeyError if none
     job_class_name = job_ticket_hash.delete(:_job_class)
     raise ":_job_class not set in the ticket" unless job_class_name
     job_class = Kernel.const_get(job_class_name)
 
+    # Grab the parameter that is responsible for executing the job later. If it is not set,
+    # use a default that will put us ahead of that execution deadline from the start.
+    t = Time.now.to_i
+    execute_after = job_ticket_hash.fetch(:_execute_after) { t - 5 }
+    
     job_params = job_ticket_hash.delete(:_job_params)
-    if job_params.nil? || job_params.empty?
+    job = if job_params.nil? || job_params.empty?
       job_class.new # no args
     else
-      begin
-        job_class.new(**job_params) # The rest of the message are keyword arguments for the job
-      rescue ArgumentError => e
-        raise ArityMismatch, "Could not instantiate #{job_class} because it did not accept the arguments #{job_params.inspect}"
-      end
+      job_class.new(**job_params) # The rest of the message are keyword arguments for the job
     end
+    
+    # If the job is not up for execution now, wrap it with something that will 
+    # re-submit it for later execution when the run() method is called
+    return ::Sqewer::Resubmit.new(job, execute_after) if execute_after > t
+    
+    job
   end
 
   # Converts the given Job into a string, which can be submitted to the queue
   #
   # @param job[#to_h] an object that supports `to_h`
+  # @param execute_after_timestamp[#to_i, nil] the Unix timestamp after which the job may be executed
   # @return [String] serialized string ready to be put into the queue
-  def serialize(job)
+  def serialize(job, execute_after_timestamp = nil)
     job_class_name = job.class.to_s
 
     begin
@@ -59,13 +64,8 @@ class Sqewer::Serializer
 
     job_params = job.respond_to?(:to_h) ? job.to_h : nil
     job_ticket_hash = {_job_class: job_class_name, _job_params: job_params}
+    job_ticket_hash[:_execute_after] = execute_after_timestamp.to_i if execute_after_timestamp
+    
     JSON.dump(job_ticket_hash)
-  end
-
-  private
-
-  def convert_old_ticket_format(hash_of_properties)
-    job_class = hash_of_properties.delete(:job_class)
-    {_job_class: job_class, _job_params: hash_of_properties}
   end
 end

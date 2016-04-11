@@ -11,6 +11,20 @@ class Sqewer::Submitter < Struct.new(:connection, :serializer)
   end
 
   def submit!(job, **kwargs_for_send)
-    connection.send_message(serializer.serialize(job), **kwargs_for_send)
+    message_body = if delay_by_seconds = kwargs_for_send[:delay_seconds]
+      clamped_delay = clamp_delay(delay_by_seconds)
+      kwargs_for_send[:delay_seconds] = clamped_delay
+      # Pass the actual delay value to the serializer, to be stored in executed_at
+      serializer.serialize(job, Time.now.to_i + delay_by_seconds)
+    else
+      serializer.serialize(job)
+    end
+    connection.send_message(message_body, **kwargs_for_send)
+  end
+  
+  private
+  
+  def clamp_delay(delay)
+    [1, 899, delay].sort[1]
   end
 end

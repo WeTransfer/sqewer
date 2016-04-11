@@ -31,6 +31,17 @@ describe Sqewer::Serializer do
       expect(described_class.new.serialize(job)).to eq("{\"_job_class\":\"SomeJob\",\"_job_params\":{\"one\":123,\"two\":[456]}}")
     end
     
+    it 'adds _execute_after when the value is given' do
+      class ThirdJob < Struct.new :one, :two
+      end
+      
+      job = ThirdJob.new(123, [456])
+      res = described_class.new.serialize(job, Time.now.to_i + 1500)
+      parsed = JSON.load(res)
+      
+      expect(parsed["_execute_after"]).to be_within(10).of(Time.now.to_i + 1500)
+    end
+    
     it 'raises an exception if the object is of an anonymous class' do
       s = Struct.new(:foo)
       o = s.new(1)
@@ -58,66 +69,50 @@ describe Sqewer::Serializer do
   end
   
   describe '#unserialize' do
-    describe 'with the old ticket format' do
-      it 'builds a job without keyword arguments if its constructor does not need any kwargs' do
-        class VerySimpleJob; end
-        blob  = '{"job_class": "VerySimpleJob"}'
-        built_job = described_class.new.unserialize(blob)
-        expect(built_job).to be_kind_of(VerySimpleJob)
-      end
+    it 'wraps the job with a Resubmit when the _execute_after key hints that it is too early' do
+      class EvenSimplerJob; end
     
-      it 'raises an error if the job does not accept the keyword arguments given in the ticket' do
-        class OtherVerySimpleJob; end
-        blob  = '{"job_class": "OtherVerySimpleJob", "foo": 1}'
+      timestamp_way_in_the_future = Time.now.to_i + (60 * 60 * 24 * 3)
+      blob  = '{"_job_class": "EvenSimplerJob", "_execute_after": %d}' % timestamp_way_in_the_future
+      built_job = described_class.new.unserialize(blob)
+    
+      expect(built_job).to be_kind_of(Sqewer::Resubmit)
+      expect(built_job.execute_after).to eq(timestamp_way_in_the_future)
       
-        expect {
-          described_class.new.unserialize(blob)
-        }.to raise_error(described_class::ArityMismatch)
-      end
-      
-      it 'instantiates the job with keyword arguments' do
-        ValidJob = Ks.strict(:foo)
-        
-        blob  = '{"job_class": "ValidJob", "foo": 1}'
-        built_job = described_class.new.unserialize(blob)
-        
-        expect(built_job).to be_kind_of(ValidJob)
-        expect(built_job.foo).to eq(1)
-      end
+      embedded_job = built_job.job
+      expect(embedded_job).to be_kind_of(EvenSimplerJob)
     end
     
-    describe 'with the new ticket format' do
-      it 'builds a job without keyword arguments if its constructor does not need any kwargs' do
-        class EvenSimplerJob; end
-        
-        blob  = '{"_job_class": "EvenSimplerJob"}'
-        built_job = described_class.new.unserialize(blob)
-        
-        expect(built_job).to be_kind_of(EvenSimplerJob)
-        
-        blob  = '{"_job_class": "EvenSimplerJob", "_job_params": null}'
-        built_job = described_class.new.unserialize(blob)
-        
-        expect(built_job).to be_kind_of(EvenSimplerJob)
-      end
-      
-      it 'raises an error if the job does not accept the keyword arguments given in the ticket' do
-        class MicroJob; end
-        blob  = '{"_job_class": "MicroJob", "_job_params":{"foo": 1}}'
-        expect {
-          described_class.new.unserialize(blob)
-        }.to raise_error(described_class::ArityMismatch)
-      end
-      
-      it 'instantiates the job with keyword arguments' do
-        OtherValidJob = Ks.strict(:foo)
-        
-        blob  = '{"_job_class": "OtherValidJob", "_job_params": {"foo": 1}}'
-        built_job = described_class.new.unserialize(blob)
-        
-        expect(built_job).to be_kind_of(OtherValidJob)
-        expect(built_job.foo).to eq(1)
-      end
+    it 'builds a job without keyword arguments if its constructor does not need any kwargs' do
+      class EvenSimplerJob; end
+    
+      blob  = '{"_job_class": "EvenSimplerJob"}'
+      built_job = described_class.new.unserialize(blob)
+    
+      expect(built_job).to be_kind_of(EvenSimplerJob)
+    
+      blob  = '{"_job_class": "EvenSimplerJob", "_job_params": null}'
+      built_job = described_class.new.unserialize(blob)
+    
+      expect(built_job).to be_kind_of(EvenSimplerJob)
+    end
+  
+    it 'raises an error if the job does not accept the keyword arguments given in the ticket' do
+      class MicroJob; end
+      blob  = '{"_job_class": "MicroJob", "_job_params":{"foo": 1}}'
+      expect {
+        described_class.new.unserialize(blob)
+      }.to raise_error(ArgumentError)
+    end
+  
+    it 'instantiates the job with keyword arguments' do
+      OtherValidJob = Ks.strict(:foo)
+    
+      blob  = '{"_job_class": "OtherValidJob", "_job_params": {"foo": 1}}'
+      built_job = described_class.new.unserialize(blob)
+    
+      expect(built_job).to be_kind_of(OtherValidJob)
+      expect(built_job.foo).to eq(1)
     end
   end
 end

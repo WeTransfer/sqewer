@@ -67,9 +67,7 @@ module ActiveJob
         def enqueue_at(active_job, timestamp) #:nodoc:
           wrapped_job = Performable.from_active_job(active_job)
 
-          delta_t = (timestamp - Time.now.to_f).to_i
-          raise "Cannot warp time-space and delay the job by #{delta_t}" if delta_t < 0
-          raise "Cannot postpone job execution by more than 15 minutes" if delta_t > 900
+          delta_t = (timestamp - Time.now.to_i).to_i
 
           Sqewer.submit!(wrapped_job, delay_seconds: delta_t)
         end

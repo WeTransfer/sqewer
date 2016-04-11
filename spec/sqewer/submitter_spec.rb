@@ -39,5 +39,23 @@ describe Sqewer::Submitter do
       subject = described_class.new(fake_connection, fake_serializer)
       subject.submit!(:some_object, delay_seconds: 5)
     end
+    
+    it 'handles the massively delayed execution by clamping the delay_seconds to the SQS maximum, and saving the _execute_after' do
+      fake_serializer = double('Some serializer')
+      allow(fake_serializer).to receive(:serialize) {|object_to_serialize, timestamp_seconds|
+        
+        delay_by = Time.now.to_i + 4585659855
+        expect(timestamp_seconds).to be_within(20).of(delay_by)
+        
+        expect(object_to_serialize).not_to be_nil
+        'serialized-object-data'
+      }
+      
+      fake_connection = double('Some SQS connection')
+      expect(fake_connection).to receive(:send_message).with('serialized-object-data', {delay_seconds: 899})
+      
+      subject = described_class.new(fake_connection, fake_serializer)
+      subject.submit!(:some_object, delay_seconds: 4585659855)
+    end
   end
 end

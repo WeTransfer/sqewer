@@ -30,7 +30,7 @@ class User < ActiveRecord::Base
 end
 
 describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
-  let(:file) { "#{Dir.mktmpdir}/file_active_job_test_1" }
+  let(:file) { File.join(Dir.tmpdir, "file_active_job_test_1") }
   let(:client) { ::Aws::SQS::Client.new }
 
   after :all do

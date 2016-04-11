@@ -65,7 +65,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     expect(resp.attributes["ApproximateNumberOfMessages"].to_i).to eq(1)
   end
 
-  it "is correct format of serialized object in the queue" do
+  it "correctly serializes the job into a Sqewer job" do
     job = CreateFileJob.perform_later(file)
     resp = client.receive_message(@queue_url_hash)
     serialized_job = JSON.parse(resp.messages.last.body)
@@ -83,9 +83,12 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     begin
       wait_for { File.exist?(file) }.to eq(true)
       File.unlink(file)
-      DeleteFileJob.set(wait: 5.seconds).perform_later(file_delayed)
+      
       wait_for { File.exist?(file_delayed) }.to eq(true)
-      sleep 5
+      DeleteFileJob.set(wait: 5.seconds).perform_later(file_delayed)
+      
+      sleep 6
+      
       expect(File.exist?(file_delayed)).to eq(false)
     ensure
       w.stop

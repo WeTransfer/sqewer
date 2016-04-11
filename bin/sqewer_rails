@@ -3,7 +3,8 @@ require_relative '../lib/sqewer'
 require_relative '../lib/sqewer/extensions/active_job_adapter'
 require_relative '../lib/sqewer/extensions/rails'
 
-# Load rails
-Sqewer.load_rails
+# Make sure all the classes are preloaded before the threads are spun up
+Rails.application.eager_load!
+
 # ...and start
 Sqewer::CLI.start(Sqewer::Worker.new(logger: Rails.logger))

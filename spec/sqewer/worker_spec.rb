@@ -62,7 +62,7 @@ describe Sqewer::Worker, :sqs => true do
   
   context 'when the job cannot be instantiated due to an unknown class' do
     it 'is able to cope with an exception when the job class is unknown (one of generic exceptions)' do
-      payload = JSON.dump({job_class: 'UnknownJobClass', arg1: 'some value'})
+      payload = JSON.dump({_job_class: 'UnknownJobClass', _job_params: {arg1: 'some value'}})
     
       client = Aws::SQS::Client.new
       client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
@@ -93,7 +93,7 @@ describe Sqewer::Worker, :sqs => true do
         end
       end
       
-      payload = JSON.dump({job_class: 'InitialJob'})
+      payload = JSON.dump({_job_class: 'InitialJob'})
       client = Aws::SQS::Client.new
       client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
       

@@ -18,7 +18,10 @@ describe Sqewer::CLI, :sqs => true, :wait => {timeout: 120} do
       end
       sleep 1
       
-      Process.kill('INFO', worker_pid) # Calls debug_thread_information!
+      begin
+        Process.kill('INFO', worker_pid) # Calls debug_thread_information!
+      rescue Errno::ENOTSUP # on Linux
+      end
       Process.kill('TERM', worker_pid) # Terminates the worker
       
       wait_for { 

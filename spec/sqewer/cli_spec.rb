@@ -9,58 +9,43 @@ describe Sqewer::CLI, :sqs => true, :wait => {timeout: 120} do
     it 'on a USR1 signal' do
       submitter = Sqewer::Connection.default
     
-      stderr = Tempfile.new('worker-stderr')
-      stderr.sync = true
-      
-      pid = fork { $stderr.reopen(stderr); $stderr.sync = true; exec("ruby #{__dir__}/cli_app.rb") }
-  
+      pid = fork { exec("ruby #{__dir__}/cli_app.rb") }
+
       Thread.new do
         20.times do
-          j = {job_class: 'MyJob', first_name: 'John', last_name: 'Doe'}
+          j = {"_job_class" => 'MyJob', "_job_params" => {first_name: 'John', last_name: 'Doe'}}
           submitter.send_message(JSON.dump(j))
         end
       end
-   
-      sleep 10 # Give it some time to process all the jobs
+
+      sleep 8
       Process.kill("USR1", pid)
       wait_for { Process.wait(pid) }
       
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty
-    
-      stderr.rewind
-      log_output = stderr.read
-      # This assertion frequently fails (probably because STDERR doesn't get flushed properly)
-      # expect(log_output).to include('Stopping (clean shutdown)')
+      generated_files.each{|path| File.unlink(path) }
     end
     
     it 'on a TERM signal' do
       submitter = Sqewer::Connection.default
     
-      stderr = Tempfile.new('worker-stderr')
-      stderr.sync = true
-    
-      pid = fork { $stderr.reopen(stderr); $stderr.sync; exec("ruby #{__dir__}/cli_app.rb") }
-  
+      pid = fork { exec("ruby #{__dir__}/cli_app.rb") }
+
       Thread.new do
         20.times do
-          j = {job_class: 'MyJob', first_name: 'John', last_name: 'Doe'}
+          j = {"_job_class" => 'MyJob', "_job_params" => {first_name: 'John', last_name: 'Doe'}}
           submitter.send_message(JSON.dump(j))
         end
       end
-   
-      sleep 4
+
+      sleep 8
       Process.kill("TERM", pid)
       wait_for { Process.wait(pid) }
       
       generated_files = Dir.glob('*-result')
       expect(generated_files).not_to be_empty
       generated_files.each{|path| File.unlink(path) }
-    
-      stderr.rewind
-      log_output = stderr.read
-      # This assertion frequently fails (probably because STDERR doesn't get flushed properly)
-      # expect(log_output).to include('Stopping (clean shutdown)')
     end
   end
 end

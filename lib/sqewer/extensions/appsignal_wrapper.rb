@@ -17,9 +17,9 @@ module Sqewer
       # Run the job with Appsignal monitoring.
       def around_execution(job, context)
         return yield unless (defined?(Appsignal) && Appsignal.active?)
-
+        job_params = job.respond_to?(:to_h) ? job.to_h : {}
         Appsignal.monitor_transaction('perform_job.sqewer', 
-          :class => job.class.to_s, :params => job.to_h, :method => 'run') do |t|
+          :class => job.class.to_s, :params => job_params, :method => 'run') do |t|
             context['appsignal.transaction'] = t
           yield
         end

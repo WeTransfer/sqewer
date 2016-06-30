@@ -219,8 +219,8 @@ class Sqewer::Worker
     throw :goodbye if stopping?
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
   rescue => e # anything else, at or below StandardError that does not need us to quit
-    @logger.error { '[worker] Failed "%s..." with %s: %s' % [message.inspect[0..32], e.class, e.message] }
-    e.backtrace.each { |s| @logger.error{"\t#{s}"} }
+    @logger.error { '[worker] Failed "%s..." with %s: %s' % [message.inspect[0..64], e.class, e.message] }
+    e.backtrace.each { |s| @logger.debug{"\t#{s}"} }
   end
 
   def perform(message)

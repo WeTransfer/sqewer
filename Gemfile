@@ -8,7 +8,8 @@ gem 'exceptional_fork'
 group :development do
   gem 'ks'
   gem 'dotenv'
-  gem 'rake'
+  gem 'rack', '~> 1.6'
+  gem 'rake', '~> 10'
   gem "rspec", "~> 3.2.0"
   gem 'rspec-wait'
   gem 'simplecov', :require => false

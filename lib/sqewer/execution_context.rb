@@ -52,6 +52,6 @@ class Sqewer::ExecutionContext
   #
   # @return [Logger] the logger to send messages to.
   def logger
-    @params.fetch('logger') { Sqewer::NullLogger }
+    Sqewer.logger
   end
 end

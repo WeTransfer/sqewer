@@ -1,6 +1,8 @@
 # The enclosing module for the library
 module Sqewer
   # Eager-load everything except extensions
+  CVM = Mutex.new
+  
   Dir.glob(__dir__ + '/**/*.rb').each do |path|
     if path != __FILE__ && File.dirname(path) !~ /\/extensions$/
       require path
@@ -23,6 +25,15 @@ module Sqewer
     Sqewer::Submitter.default.submit!(*jobs, **options)
   end
   
+  def self.logger=(new_logger)
+    CVM.synchronize { @logger = new_logger }
+  end
+
+  def self.logger
+    CVM.synchronize { @logger || NullLogger }
+  end
+  
   # If we are within Rails, load the railtie
   require_relative 'sqewer/extensions/railtie' if defined?(Rails)
+  private_constant :CVM
 end

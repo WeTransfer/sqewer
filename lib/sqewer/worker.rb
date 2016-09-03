@@ -18,18 +18,15 @@ class Sqewer::Worker
   # @return [Sqewer::Serializer] The serializer for unmarshalling and marshalling
   attr_reader :serializer
 
-  # @return [Sqewer::MiddlewareStack] The stack used when executing the job
-  attr_reader :middleware_stack
-
-  # @return [Class] The class to use when instantiating the execution context
-  attr_reader :execution_context_class
-
   # @return [Class] The class used to create the Submitter used by jobs to spawn other jobs
   attr_reader :submitter_class
 
   # @return [Array<Thread>] all the currently running threads of the Worker
   attr_reader :threads
 
+  # @return [Sqewer::Hooks>] the hooks for this Worker
+  attr_reader :hooks
+  
   # @return [Fixnum] the number of worker threads set up for this Worker
   attr_reader :num_threads
 
@@ -55,14 +52,11 @@ class Sqewer::Worker
       serializer: Sqewer::Serializer.default,
       execution_context_class: Sqewer::ExecutionContext,
       submitter_class: Sqewer::Submitter,
-      middleware_stack: Sqewer::MiddlewareStack.default,
-      logger: Logger.new($stderr),
       num_threads: DEFAULT_NUM_THREADS)
 
-    @logger = logger
+    @logger = Sqewer.logger
     @connection = connection
     @serializer = serializer
-    @middleware_stack = middleware_stack
     @execution_context_class = execution_context_class
     @submitter_class = submitter_class
     @num_threads = num_threads
@@ -182,33 +176,24 @@ class Sqewer::Worker
   end
 
   def handle_message(message)
-    return unless message.receipt_handle
-
     # Create a messagebox that buffers all the calls to Connection, so that
     # we can send out those commands in one go (without interfering with senders
     # on other threads, as it seems the Aws::SQS::Client is not entirely
     # thread-safe - or at least not it's HTTP client part).
     box = Sqewer::ConnectionMessagebox.new(connection)
-    return box.delete_message(message.receipt_handle) unless message.has_body?
-
-    job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body) do
-      serializer.unserialize(message.body)
-    end
-    return unless job
-
+    
+    # Set up all context-dependent objects
     submitter = submitter_class.new(box, serializer)
-    context = execution_context_class.new(submitter, {'logger' => logger})
-
-    t = Time.now
-    middleware_stack.around_execution(job, context) do
-      job.method(:run).arity.zero? ? job.run : job.run(context)
-    end
+    executor = Sqewer::Executor.new(serializer: serializer, execution_context: submitter, hooks: Sqewer::Hooks.new)
+    
+    # Unserialize and call the "run" method
+    executor.unserialize_and_perform(message)
+    
+    # Delete the performed job, and then flush the buffered submits/deletes. If an exception is
+    # raised during execution, both deletes _and_ submits will be discarded
     box.delete_message(message.receipt_handle)
-
-    delta = Time.now - t
-    logger.info { "[worker] Finished %s in %0.2fs" % [job.inspect, delta] }
-  ensure
     n_flushed = box.flush!
+    
     logger.debug { "[worker] Flushed %d connection commands" % n_flushed } if n_flushed.nonzero?
   end
 
@@ -218,39 +203,5 @@ class Sqewer::Worker
   rescue ThreadError # Queue is empty
     throw :goodbye if stopping?
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
-  rescue => e # anything else, at or below StandardError that does not need us to quit
-    @logger.error { '[worker] Failed "%s..." with %s: %s' % [message.inspect[0..64], e.class, e.message] }
-    e.backtrace.each { |s| @logger.debug{"\t#{s}"} }
-  end
-
-  def perform(message)
-    # Create a messagebox that buffers all the calls to Connection, so that
-    # we can send out those commands in one go (without interfering with senders
-    # on other threads, as it seems the Aws::SQS::Client is not entirely
-    # thread-safe - or at least not it's HTTP client part).
-    box = Sqewer::ConnectionMessagebox.new(connection)
-
-    job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body) do
-      serializer.unserialize(message.body)
-    end
-    return unless job
-
-    submitter = submitter_class.new(box, serializer)
-    context = execution_context_class.new(submitter, {'logger' => logger})
-
-    t = Time.now
-    middleware_stack.around_execution(job, context) do
-      job.method(:run).arity.zero? ? job.run : job.run(context)
-    end
-
-    # Perform two flushes, one for any possible jobs the job has spawned,
-    # and one for the job delete afterwards
-    box.delete_message(message.receipt_handle)
-
-    delta = Time.now - t
-    logger.info { "[worker] Finished %s in %0.2fs" % [job.inspect, delta] }
-  ensure
-    n_flushed = box.flush!
-    logger.debug { "[worker] Flushed %d connection commands" % n_flushed } if n_flushed.nonzero?
   end
 end

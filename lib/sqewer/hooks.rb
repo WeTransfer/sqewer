@@ -1,8 +1,12 @@
 class Sqewer::Hooks
+  def self.default
+    new
+  end
+  
   def initialize
     @hooks = []
     @hooks << Sqewer::TimerHook.new
-    @hooks << Sqewer::AppsignalHook.new
+#    @hooks << Sqewer::AppsignalHook.new
   end
   
   def <<(hook)

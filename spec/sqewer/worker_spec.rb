@@ -6,16 +6,6 @@ describe Sqewer::Worker, :sqs => true do
     ENV['SHOW_TEST_LOGS'] ? Logger.new($stderr) : Logger.new(StringIO.new(''))
   }
   
-  it 'has all the necessary attributes' do
-    attrs = [:logger, :connection, :serializer, :middleware_stack, 
-      :execution_context_class, :submitter_class, :num_threads]
-    default_worker = described_class.default
-    attrs.each do | attr_name |
-      expect(default_worker).to respond_to(attr_name)
-      expect(default_worker.public_send(attr_name)).not_to be_nil
-    end
-  end
-    
   it 'supports .default' do
     default_worker = described_class.default
     expect(default_worker).to respond_to(:start)
@@ -27,13 +17,8 @@ describe Sqewer::Worker, :sqs => true do
     expect(workers.uniq.length).to eq(10)
   end
   
-  it 'instantiates a Logger to STDERR by default' do
-    expect(Logger).to receive(:new).with(STDERR)
-    worker = described_class.new
-  end
-  
   it 'can go through the full cycle of initialize, start, stop, start, stop' do
-    worker = described_class.new(logger: test_logger)
+    worker = described_class.new
     worker.start
     worker.stop
     worker.start
@@ -52,7 +37,8 @@ describe Sqewer::Worker, :sqs => true do
       client = Aws::SQS::Client.new
       client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: '{"foo":')
       
-      worker = described_class.new(logger: test_logger)
+      Sqewer.logger = test_logger
+      worker = described_class.new
       
       worker.start
       sleep 2
@@ -67,7 +53,8 @@ describe Sqewer::Worker, :sqs => true do
       client = Aws::SQS::Client.new
       client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
       
-      worker = described_class.new(logger: test_logger)
+      Sqewer.logger = test_logger
+      worker = described_class.new
       
       worker.start
       sleep 2
@@ -96,8 +83,8 @@ describe Sqewer::Worker, :sqs => true do
       payload = JSON.dump({_job_class: 'InitialJob'})
       client = Aws::SQS::Client.new
       client.send_message(queue_url: ENV.fetch('SQS_QUEUE_URL'), message_body: payload)
-      
-      worker = described_class.new(logger: test_logger, num_threads: 8)
+      Sqewer.logger = test_logger
+      worker = described_class.new(num_threads: 8)
       
       worker.start
       

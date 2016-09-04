@@ -8,7 +8,8 @@ class Sqewer::Worker
   DEFAULT_NUM_THREADS = 4
   SLEEP_SECONDS_ON_EMPTY_QUEUE = 1
   THROTTLE_FACTOR = 2
-
+  NOOP = ->(*){}
+  
   # @return [Logger] The logger used for job execution
   attr_reader :logger
 
@@ -18,14 +19,8 @@ class Sqewer::Worker
   # @return [Sqewer::Serializer] The serializer for unmarshalling and marshalling
   attr_reader :serializer
 
-  # @return [Class] The class used to create the Submitter used by jobs to spawn other jobs
-  attr_reader :submitter_class
-
   # @return [Array<Thread>] all the currently running threads of the Worker
   attr_reader :threads
-
-  # @return [Sqewer::Hooks>] the hooks for this Worker
-  attr_reader :hooks
   
   # @return [Fixnum] the number of worker threads set up for this Worker
   attr_reader :num_threads
@@ -41,32 +36,16 @@ class Sqewer::Worker
   # the actual processing of jobs, and not for the job arguments.
   #
   # @param connection[Sqewer::Connection] the object that handles polling and submitting
-  # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
-  # @param execution_context_class[Class] the class for the execution context (will be instantiated by 
-  # the worker for each job execution)
-  # @param submitter_class[Class] the class used for submitting jobs (will be instantiated by the worker for each job execution)
-  # @param middleware_stack[Sqewer::MiddlewareStack] the middleware stack that is going to be used
-  # @param logger[Logger] the logger to log execution to and to pass to the jobs
   # @param num_threads[Fixnum] how many worker threads to spawn
-  def initialize(connection: Sqewer::Connection.default,
-      serializer: Sqewer::Serializer.default,
-      execution_context_class: Sqewer::ExecutionContext,
-      submitter_class: Sqewer::Submitter,
-      num_threads: DEFAULT_NUM_THREADS)
-
-    @logger = Sqewer.logger
+  def initialize(connection: Sqewer::Connection.default, num_threads: DEFAULT_NUM_THREADS, &executor_setup)
+    @executor_setup = (executor_setup || NOOP).to_proc
     @connection = connection
-    @serializer = serializer
-    @execution_context_class = execution_context_class
-    @submitter_class = submitter_class
     @num_threads = num_threads
-
     @threads = []
 
     raise ArgumentError, "num_threads must be > 0" unless num_threads > 0
 
     @execution_counter = Sqewer::AtomicCounter.new
-
     @state = Sqewer::StateLock.new
   end
 
@@ -77,7 +56,7 @@ class Sqewer::Worker
   def start
     @state.transition! :starting
 
-    @logger.info { '[worker] Starting with %d consumer threads' % @num_threads }
+    logger.info { '[worker] Starting with %d consumer threads' % @num_threads }
     @execution_queue = Queue.new
 
     consumers = (1..@num_threads).map do
@@ -96,13 +75,13 @@ class Sqewer::Worker
           messages = @connection.receive_messages
           if messages.any?
             messages.each {|m| @execution_queue << m }
-            @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
+            logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
           else
-            @logger.debug { "[worker] No messages received" }
+            logger.debug { "[worker] No messages received" }
             Thread.pass
           end
         else
-          @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
+          logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
           sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
         end
       end
@@ -114,10 +93,10 @@ class Sqewer::Worker
     if @threads.any?{|t| !t.alive? }
       @threads.map(&:kill)
       @state.transition! :failed
-      @logger.fatal { '[worker] Failed to start (one or more threads died on startup)' }
+      logger.fatal { '[worker] Failed to start (one or more threads died on startup)' }
     else
       @state.transition! :running
-      @logger.info { '[worker] Started, %d consumer threads' % consumers.length }
+      logger.info { '[worker] Started, %d consumer threads' % consumers.length }
     end
   end
 
@@ -130,20 +109,20 @@ class Sqewer::Worker
   # @return [true]
   def stop
     @state.transition! :stopping
-    @logger.info { '[worker] Stopping (clean shutdown), will wait for local cache to drain' }
+    logger.info { '[worker] Stopping (clean shutdown), will wait for local cache to drain' }
     loop do
       n_live = @threads.select(&:alive?).length
       break if n_live.zero?
 
       n_dead = @threads.length - n_live
-      @logger.info { '[worker] Staged shutdown, %d threads alive, %d have quit, %d jobs in local cache' %
+      logger.info { '[worker] Staged shutdown, %d threads alive, %d have quit, %d jobs in local cache' %
         [n_live, n_dead, @execution_queue.length] }
 
       sleep 2
     end
 
     @threads.map(&:join)
-    @logger.info { '[worker] Stopped'}
+    logger.info { '[worker] Stopped'}
     @state.transition! :stopped
     true
   end
@@ -151,17 +130,17 @@ class Sqewer::Worker
   # Peforms a hard shutdown by killing all the threads
   def kill
     @state.transition! :stopping
-    @logger.info { '[worker] Killing (unclean shutdown), will kill all threads'}
+    logger.info { '[worker] Killing (unclean shutdown), will kill all threads'}
     @threads.map(&:kill)
-    @logger.info { '[worker] Stopped'}
+    logger.info { '[worker] Stopped'}
     @state.transition! :stopped
   end
 
   # Prints the status and the backtraces of all controlled threads to the logger
   def debug_thread_information!
     @threads.each do | t |
-      @logger.debug { t.inspect }
-      @logger.debug { t.backtrace }
+      logger.debug { t.inspect }
+      logger.debug { t.backtrace }
     end
   end
 
@@ -176,25 +155,17 @@ class Sqewer::Worker
   end
 
   def handle_message(message)
+    executor = Sqewer::Executor.new
+    @executor_setup.call(executor)
+    serializer = executor.serializer
+    
     # Create a messagebox that buffers all the calls to Connection, so that
     # we can send out those commands in one go (without interfering with senders
     # on other threads, as it seems the Aws::SQS::Client is not entirely
     # thread-safe - or at least not it's HTTP client part).
+    # Spool these messages to the batch messagebox
     box = Sqewer::ConnectionMessagebox.new(connection)
-    
-    # Set up all context-dependent objects
-    submitter = submitter_class.new(box, serializer)
-    executor = Sqewer::Executor.new(serializer: serializer, execution_context: submitter, hooks: Sqewer::Hooks.new)
-    
-    # Unserialize and call the "run" method
-    executor.unserialize_and_perform(message)
-    
-    # Delete the performed job, and then flush the buffered submits/deletes. If an exception is
-    # raised during execution, both deletes _and_ submits will be discarded
-    box.delete_message(message.receipt_handle)
-    n_flushed = box.flush!
-    
-    logger.debug { "[worker] Flushed %d connection commands" % n_flushed } if n_flushed.nonzero?
+    executor.unserialize_and_perform(message, box)
   end
 
   def take_and_execute
@@ -203,5 +174,9 @@ class Sqewer::Worker
   rescue ThreadError # Queue is empty
     throw :goodbye if stopping?
     sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
+  end
+  
+  def logger
+    Sqewer.logger
   end
 end

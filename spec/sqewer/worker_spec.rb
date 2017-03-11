@@ -47,6 +47,19 @@ describe Sqewer::Worker, :sqs => true do
     }.to raise_error(/Cannot change state/)
   end
   
+  context 'when the connection to SQS hangs in receive_messages' do
+    it 'is able to die with dignity' do
+      fake_conn = double('Hung connection')
+      allow(fake_conn).to receive(:receive_messages) {
+        loop { sleep 0.5 }
+      }
+      worker = described_class.new(logger: test_logger, connection: fake_conn)
+      worker.start
+      sleep 2
+      worker.stop
+    end
+  end
+  
   context 'when the job payload cannot be unserialized from JSON due to invalid syntax' do
     it 'is able to cope with an exception when the job class is unknown (one of generic exceptions)' do
       client = Aws::SQS::Client.new

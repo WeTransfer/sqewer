@@ -114,6 +114,9 @@ class Sqewer::Worker
       end
     end
 
+    # Register the provider separately for the situation where it hangs in `receive_messages` and doesn't
+    # terminate from within it's own run loop.
+    @provider_thread = provider
     @threads = consumers + [provider]
 
     # If any of our threads are already dead, it means there is some misconfiguration and startup failed
@@ -136,7 +139,8 @@ class Sqewer::Worker
   # @return [true]
   def stop
     @state.transition! :stopping
-    @logger.info { '[worker] Stopping (clean shutdown), will wait for local cache to drain' }
+    @logger.info { '[worker] Stopping (clean shutdown), will wait for local cache to drain. Killing the provider thread now.' }
+    @provider_thread.kill
     loop do
       n_live = @threads.select(&:alive?).length
       break if n_live.zero?

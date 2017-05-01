@@ -126,7 +126,7 @@ class Sqewer::Connection
       resp = client.delete_message_batch(queue_url: @queue_url, entries: batch)
       failed = resp.failed
       if failed.any?
-        err = failed[0].message
+        err = failed.inspect
         raise "%d messages failed to delete (first error was %s)" % [failed.length, err]
       end
     end

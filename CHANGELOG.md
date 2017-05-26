@@ -1,3 +1,7 @@
+### 2017-05-26
+- Released v5.0.6 to Rubygems.org.
+- Additional change to error reporting: report errors both on submitting and on deleting messages.
+
 ### 2017-05-03
 - Released v5.0.5 to Rubygems.org.
 - Added CHANGELOG.md (you're reading it!).

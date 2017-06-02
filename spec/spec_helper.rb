@@ -5,6 +5,7 @@ require 'rspec/wait'
 require 'dotenv'
 require 'aws-sdk'
 require 'simplecov'
+require 'securerandom'
 Dotenv.load
 
 SimpleCov.start

@@ -101,7 +101,7 @@ class Sqewer::Connection
       failed = resp.failed
       if failed.any?
         err = failed.inspect + ', ' + resp.inspect
-        raise "%d messages failed to send: " % [failed.length, err]
+        raise "#{failed.length} messages failed to send: #{err}"
       end
     end
   end
@@ -127,7 +127,7 @@ class Sqewer::Connection
       failed = resp.failed
       if failed.any?
         err = failed.inspect + ', ' + resp.inspect
-        raise "%d messages failed to delete: " % [failed.length, err]
+        raise "#{failed.length} messages failed to delete: #{err}"
       end
     end
   end

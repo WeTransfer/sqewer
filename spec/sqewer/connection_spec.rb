@@ -52,7 +52,7 @@ describe Sqewer::Connection do
       }
       
       conn = described_class.new('https://fake-queue.com')
-      conn.send_multiple_messages do | b|
+      conn.send_multiple_messages do | b |
         102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
       end
     end
@@ -66,10 +66,10 @@ describe Sqewer::Connection do
       
       conn = described_class.new('https://fake-queue.com')
       expect {
-        conn.send_multiple_messages do | b|
-          102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
+        conn.send_multiple_messages do | b |
+          10.times { b.send_message("Hello - #{SecureRandom.uuid}") }
         end
-      }.to raise_error(/messages failed to send/)
+      }.to raise_error(/messages failed to send:/)
     end
     
     it 'retries on networking errors'

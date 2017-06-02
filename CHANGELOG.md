@@ -1,4 +1,9 @@
 ### 2017-05-26
+- Released v5.0.7 to Rubygems.org.
+- Report errors with string interpolation to avoid confusion.
+- Fix failure when running one test at a time.
+
+### 2017-05-26
 - Released v5.0.6 to Rubygems.org.
 - Additional change to error reporting: report errors both on submitting and on deleting messages.
 

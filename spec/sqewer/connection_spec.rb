@@ -121,7 +121,7 @@ describe Sqewer::Connection do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
       expect(fake_sqs_client).to receive(:delete_message_batch) {|kwargs|
-        double(failed: [double(message: 'Something went wrong at AWS')])
+        double(failed: [double(message: 'Something went wrong at AWS', sender_fault: true, id:1)])
       }
       
       conn = described_class.new('https://fake-queue.com')
@@ -130,6 +130,20 @@ describe Sqewer::Connection do
           102.times { b.delete_message(SecureRandom.uuid) }
         end
       }.to raise_error(/messages failed to delete/)
+    end
+
+    it 'retries the message if it fails with a random AWS error' do
+      fake_sqs_client = double('Client')
+      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      failed_response = double(failed: [double(message: 'Something went wrong at AWS', sender_fault: false, id: 1)])
+      success_response = double(failed: [])
+      # expect send_message to be called three times, the original one and two retries. The second retry succeeds.
+      expect(fake_sqs_client).to receive(:delete_message_batch).and_return(failed_response,failed_response,success_response).exactly(3).times
+
+      conn = described_class.new('https://fake-queue.com')
+      conn.delete_multiple_messages do | b |
+        b.delete_message("Hello - #{SecureRandom.uuid}")
+      end
     end
     
     it 'retries on networking errors'

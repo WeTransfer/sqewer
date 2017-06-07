@@ -130,15 +130,25 @@ class Sqewer::Connection
   # @yield [#delete_message] an object you can delete an individual message through
   # @return [void]
   def delete_multiple_messages
+    total_retries = 0
     buffer = DeleteBuffer.new
     yield(buffer)
 
     buffer.each_batch do | batch |
       resp = client.delete_message_batch(queue_url: @queue_url, entries: batch)
-      failed = resp.failed
-      if failed.any?
-        err = failed.inspect + ', ' + resp.inspect
-        raise "#{failed.length} messages failed to delete: #{err}"
+      wrong_messages, aws_failures = resp.failed.partition {|m| m.sender_fault }
+      if wrong_messages.any?
+        err = wrong_messages.inspect + ', ' + resp.inspect
+        raise "#{wrong_messages.length} messages failed to delete: #{err}"
+      elsif aws_failures.any?
+        aws_failures.each do |aws_response_message|
+          # terrible algorithmic runtime but n <= 10 and this only happens every 1 in 10^7 messages or so.
+          failed_message = batch.find { |m| aws_response_message.id == m[:id] }
+          if total_retries <= MAX_RANDOM_FAILURES_PER_CALL
+            buffer.delete_message(failed_message) # each_batch will eventually pick it up again
+            total_retries += 1
+          end
+        end
       end
     end
   end

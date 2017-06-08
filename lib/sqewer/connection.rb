@@ -10,6 +10,8 @@ class Sqewer::Connection
   BATCH_RECEIVE_SIZE = 10
   MAX_RANDOM_FAILURES_PER_CALL = 10
 
+  NotOurFaultAwsError = Class.new(StandardError)
+
   # A wrapper for most important properties of the received message
   class Message < Struct.new(:receipt_handle, :body)
     def inspect
@@ -95,26 +97,10 @@ class Sqewer::Connection
   # @yield [#send_message] the object you can send messages through (will be flushed at method return)
   # @return [void]
   def send_multiple_messages
-    total_retries = 0
     buffer = SendBuffer.new
     yield(buffer)
-    buffer.each_batch do | batch |
-      resp = client.send_message_batch(queue_url: @queue_url, entries: batch)
-      wrong_messages, aws_failures = resp.failed.partition {|m| m.sender_fault }
-      if wrong_messages.any?
-        err = wrong_messages.inspect + ', ' + resp.inspect
-        raise "#{wrong_messages.length} messages failed to send: #{err}"
-      elsif aws_failures.any?
-        aws_failures.each do |aws_response_message|
-          # terrible algorithmic runtime but n <= 10 and this only happens every 1 in 10^7 messages or so.
-          failed_message = batch.find { |m| aws_response_message.id == m[:id] }
-          if total_retries <= MAX_RANDOM_FAILURES_PER_CALL
-            buffer.send_message(failed_message) # each_batch will eventually pick it up again
-            total_retries += 1
-          end
-        end
-      end
-    end
+
+    buffer.each_batch {|batch| handle_batch_with_retries(:send_message_batch, batch) }
   end
 
   # Deletes a message after it has been succesfully decoded and processed
@@ -130,30 +116,28 @@ class Sqewer::Connection
   # @yield [#delete_message] an object you can delete an individual message through
   # @return [void]
   def delete_multiple_messages
-    total_retries = 0
     buffer = DeleteBuffer.new
     yield(buffer)
 
-    buffer.each_batch do | batch |
-      resp = client.delete_message_batch(queue_url: @queue_url, entries: batch)
-      wrong_messages, aws_failures = resp.failed.partition {|m| m.sender_fault }
-      if wrong_messages.any?
-        err = wrong_messages.inspect + ', ' + resp.inspect
-        raise "#{wrong_messages.length} messages failed to delete: #{err}"
-      elsif aws_failures.any?
-        aws_failures.each do |aws_response_message|
-          # terrible algorithmic runtime but n <= 10 and this only happens every 1 in 10^7 messages or so.
-          failed_message = batch.find { |m| aws_response_message.id == m[:id] }
-          if total_retries <= MAX_RANDOM_FAILURES_PER_CALL
-            buffer.delete_message(failed_message) # each_batch will eventually pick it up again
-            total_retries += 1
-          end
-        end
-      end
-    end
+    buffer.each_batch {|batch| handle_batch_with_retries(:delete_message_batch, batch) }
   end
 
   private
+
+  def handle_batch_with_retries(method, batch)
+    Retriable.retriable on: NotOurFaultAwsError, tries: MAX_RANDOM_FAILURES_PER_CALL do
+      resp = client.send(method, queue_url: @queue_url, entries: batch)
+      wrong_messages, aws_failures = resp.failed.partition {|m| m.sender_fault }
+      if wrong_messages.any?
+        err = wrong_messages.inspect + ', ' + resp.inspect
+        raise "#{wrong_messages.length} messages failed while doing #{method.to_s} with error: #{err}"
+      elsif aws_failures.any?
+        # We set the 'batch' param to an array with only the failed messages so only those get retried
+        batch = aws_failures.map {|aws_response_message| batch.find { |m| aws_response_message.id.to_s == m[:id] }}
+        raise NotOurFaultAwsError
+      end
+    end
+  end
 
   class RetryWrapper < Struct.new(:sqs_client)
     MAX_RETRIES = 1000

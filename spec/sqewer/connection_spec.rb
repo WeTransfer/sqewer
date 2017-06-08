@@ -69,13 +69,13 @@ describe Sqewer::Connection do
         conn.send_multiple_messages do | b |
           10.times { b.send_message("Hello - #{SecureRandom.uuid}") }
         end
-      }.to raise_error(/messages failed to send:/)
+      }.to raise_error(/messages failed while doing send_message_batch with error:/)
     end
 
     it 'retries the message if it fails with a random AWS error' do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
-      failed_response = double(failed: [double(message: 'Something went wrong at AWS', sender_fault: false, id: 1)])
+      failed_response = double(failed: [double(message: 'Something went wrong at AWS', sender_fault: false, id: 0)])
       success_response = double(failed: [])
       # expect send_message to be called three times, the original one and two retries. The second retry succeeds.
       expect(fake_sqs_client).to receive(:send_message_batch).and_return(failed_response,failed_response,success_response).exactly(3).times
@@ -112,7 +112,7 @@ describe Sqewer::Connection do
       }
       
       conn = described_class.new('https://fake-queue.com')
-      conn.delete_multiple_messages do | b|
+      conn.delete_multiple_messages do | b |
         102.times { b.delete_message(SecureRandom.uuid) }
       end
     end
@@ -126,16 +126,16 @@ describe Sqewer::Connection do
       
       conn = described_class.new('https://fake-queue.com')
       expect {
-        conn.delete_multiple_messages do | b|
+        conn.delete_multiple_messages do | b |
           102.times { b.delete_message(SecureRandom.uuid) }
         end
-      }.to raise_error(/messages failed to delete/)
+      }.to raise_error(/messages failed while doing delete_message_batch with error:/)
     end
 
     it 'retries the message if it fails with a random AWS error' do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
-      failed_response = double(failed: [double(message: 'Something went wrong at AWS', sender_fault: false, id: 1)])
+      failed_response = double(failed: [double(message: 'Something went wrong at AWS', sender_fault: false, id: 0)])
       success_response = double(failed: [])
       # expect send_message to be called three times, the original one and two retries. The second retry succeeds.
       expect(fake_sqs_client).to receive(:delete_message_batch).and_return(failed_response,failed_response,success_response).exactly(3).times

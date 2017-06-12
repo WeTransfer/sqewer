@@ -1,3 +1,7 @@
+### 2017-06-12
+- Released v5.0.8 to Rubygems.org.
+- Retry sending and deleting messages when `sender_fault=false`.
+
 ### 2017-05-26
 - Released v5.0.7 to Rubygems.org.
 - Report errors with string interpolation to avoid confusion.

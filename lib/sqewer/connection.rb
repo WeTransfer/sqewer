@@ -8,6 +8,9 @@
 class Sqewer::Connection
   DEFAULT_TIMEOUT_SECONDS = 5
   BATCH_RECEIVE_SIZE = 10
+  MAX_RANDOM_FAILURES_PER_CALL = 10
+
+  NotOurFaultAwsError = Class.new(StandardError)
 
   # A wrapper for most important properties of the received message
   class Message < Struct.new(:receipt_handle, :body)
@@ -96,14 +99,8 @@ class Sqewer::Connection
   def send_multiple_messages
     buffer = SendBuffer.new
     yield(buffer)
-    buffer.each_batch do | batch |
-      resp = client.send_message_batch(queue_url: @queue_url, entries: batch)
-      failed = resp.failed
-      if failed.any?
-        err = failed.inspect + ', ' + resp.inspect
-        raise "#{failed.length} messages failed to send: #{err}"
-      end
-    end
+
+    buffer.each_batch {|batch| handle_batch_with_retries(:send_message_batch, batch) }
   end
 
   # Deletes a message after it has been succesfully decoded and processed
@@ -122,17 +119,25 @@ class Sqewer::Connection
     buffer = DeleteBuffer.new
     yield(buffer)
 
-    buffer.each_batch do | batch |
-      resp = client.delete_message_batch(queue_url: @queue_url, entries: batch)
-      failed = resp.failed
-      if failed.any?
-        err = failed.inspect + ', ' + resp.inspect
-        raise "#{failed.length} messages failed to delete: #{err}"
-      end
-    end
+    buffer.each_batch {|batch| handle_batch_with_retries(:delete_message_batch, batch) }
   end
 
   private
+
+  def handle_batch_with_retries(method, batch)
+    Retriable.retriable on: NotOurFaultAwsError, tries: MAX_RANDOM_FAILURES_PER_CALL do
+      resp = client.send(method, queue_url: @queue_url, entries: batch)
+      wrong_messages, aws_failures = resp.failed.partition {|m| m.sender_fault }
+      if wrong_messages.any?
+        err = wrong_messages.inspect + ', ' + resp.inspect
+        raise "#{wrong_messages.length} messages failed while doing #{method.to_s} with error: #{err}"
+      elsif aws_failures.any?
+        # We set the 'batch' param to an array with only the failed messages so only those get retried
+        batch = aws_failures.map {|aws_response_message| batch.find { |m| aws_response_message.id.to_s == m[:id] }}
+        raise NotOurFaultAwsError
+      end
+    end
+  end
 
   class RetryWrapper < Struct.new(:sqs_client)
     MAX_RETRIES = 1000

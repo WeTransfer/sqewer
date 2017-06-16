@@ -1,3 +1,8 @@
+### 2017-06-16
+- Released v5.0.9 to Rubygems.org.
+- Testing with fake_sqs when the daemon was not running or with a misconfigured SQS_QUEUE_URL could lead to Sqewer seemingly hanging. The actual cause was a _very_ large amount of retries were being performed. The amount of retries has been adjusted to a more reasonable number.
+- An exception in the message fetching thread could lead to the receiving thread silently dying, while leaving the worker threads running without any work to do. Uncaught exceptions in the receiving thread now lead to a graceful shutdown of the worker.
+
 ### 2017-06-12
 - Released v5.0.8 to Rubygems.org.
 - Retry sending and deleting messages when `sender_fault=false`.

@@ -43,10 +43,10 @@ class Sqewer::Connection
   #
   # @return [Array<Message>] an array of Message objects 
   def receive_messages
-    response = client.receive_message(queue_url: @queue_url,
-      wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: 10)
-    response.messages.map do | message |
-      Message.new(message.receipt_handle, message.body)
+    Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_FAILURES_PER_CALL do
+      response = client.receive_message(queue_url: @queue_url,
+        wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: BATCH_RECEIVE_SIZE)
+      response.messages.map {|message| Message.new(message.receipt_handle, message.body) }
     end
   end
 
@@ -125,7 +125,7 @@ class Sqewer::Connection
   private
 
   def handle_batch_with_retries(method, batch)
-    Retriable.retriable on: NotOurFaultAwsError, tries: MAX_RANDOM_FAILURES_PER_CALL do
+    Retriable.retriable on: [NotOurFaultAwsError, Seahorse::Client::NetworkingError], tries: MAX_RANDOM_FAILURES_PER_CALL do
       resp = client.send(method, queue_url: @queue_url, entries: batch)
       wrong_messages, aws_failures = resp.failed.partition {|m| m.sender_fault }
       if wrong_messages.any?
@@ -139,27 +139,7 @@ class Sqewer::Connection
     end
   end
 
-  class RetryWrapper < Struct.new(:sqs_client)
-    MAX_RETRIES = 1000
-    # Provide retrying wrappers for all the methods of Aws::SQS::Client that we actually use
-    [:delete_message_batch, :send_message_batch, :receive_message].each do |retriable_method_name|
-      define_method(retriable_method_name) do |*args, **kwargs|
-        tries = 1
-        begin
-          sqs_client.public_send(retriable_method_name, *args, **kwargs)
-        rescue Seahorse::Client::NetworkingError => e
-          if (tries += 1) >= MAX_RETRIES
-            raise(e)
-          else
-            sleep 0.5
-            retry
-          end
-        end
-      end
-    end
-  end
-
   def client
-    @client ||= RetryWrapper.new(Aws::SQS::Client.new)
+    @client ||= Aws::SQS::Client.new
   end
 end

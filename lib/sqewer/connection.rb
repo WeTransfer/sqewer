@@ -39,11 +39,14 @@ class Sqewer::Connection
     @queue_url = queue_url
   end
 
-  # Receive at most 10 messages from the queue, and return the array of Message objects.
+  # Receive at most 10 messages from the queue, and return the array of Message objects. Retries for at
+  # most 900 seconds (15 minutes) and then gives up, thereby crashing the read loop. If SQS is not available
+  # even after 15 minutes it is either down or the server is misconfigured. Either way it makes no sense to
+  # continue.
   #
   # @return [Array<Message>] an array of Message objects 
   def receive_messages
-    Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_FAILURES_PER_CALL do
+    Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_FAILURES_PER_CALL*10 do
       response = client.receive_message(queue_url: @queue_url,
         wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: BATCH_RECEIVE_SIZE)
       response.messages.map {|message| Message.new(message.receipt_handle, message.body) }

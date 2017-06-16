@@ -33,6 +33,9 @@ class Sqewer::Worker
   # @return [Fixnum] the number of worker threads set up for this Worker
   attr_reader :num_threads
 
+  # @return [Symbol] the current state of this Worker
+  attr_reader :state
+
   # Returns a Worker instance, configured based on the default components
   #
   # @return [Sqewer::Worker]
@@ -94,8 +97,10 @@ class Sqewer::Worker
 
     # Create the provider thread. When the execution queue is exhausted,
     # grab new messages and place them on the local queue.
+    this = self # self won't be self anymore in the thread
     provider = Thread.new do
       loop do
+        begin
         break if stopping?
 
         if queue_has_capacity?
@@ -110,6 +115,10 @@ class Sqewer::Worker
         else
           @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
           sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
+        end
+        rescue StandardError => e
+          @logger.fatal "Exiting because message receiving thread died. Exception causing this: #{e.inspect}"
+          this.stop # allow any queues and/or running jobs to complete
         end
       end
     end
@@ -158,7 +167,7 @@ class Sqewer::Worker
     true
   end
 
-  # Peforms a hard shutdown by killing all the threads
+  # Performs a hard shutdown by killing all the threads
   def kill
     @state.transition! :stopping
     @logger.info { '[worker] Killing (unclean shutdown), will kill all threads'}

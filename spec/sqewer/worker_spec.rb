@@ -59,6 +59,24 @@ describe Sqewer::Worker, :sqs => true do
       worker.stop
     end
   end
+
+  context 'when the connection to SQS fails in receive_messages' do
+    it 'it stops itself gracefully' do
+      fake_conn = double('bad connection')
+      allow(fake_conn).to receive(:receive_messages).and_raise("boom")
+
+      worker = described_class.new(logger: test_logger, connection: fake_conn)
+
+      expect(worker).to receive(:stop).at_least(:once)
+      expect(worker).not_to receive(:kill)
+
+      worker.start
+      wait_for(worker.state.in_state?(:stopped))
+      wait_for{
+        test_logger.instance_eval { @logdev.dev.string }
+      }.to include("boom")
+    end
+  end
   
   context 'when the job payload cannot be unserialized from JSON due to invalid syntax' do
     it 'is able to cope with an exception when the job class is unknown (one of generic exceptions)' do

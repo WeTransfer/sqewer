@@ -101,21 +101,21 @@ class Sqewer::Worker
     provider = Thread.new do
       loop do
         begin
-        break if stopping?
+          break if stopping?
 
-        if queue_has_capacity?
-          messages = @connection.receive_messages
-          if messages.any?
-            messages.each {|m| @execution_queue << m }
-            @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
+          if queue_has_capacity?
+            messages = @connection.receive_messages
+            if messages.any?
+              messages.each {|m| @execution_queue << m }
+              @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
+            else
+              @logger.debug { "[worker] No messages received" }
+              Thread.pass
+            end
           else
-            @logger.debug { "[worker] No messages received" }
-            Thread.pass
+            @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
+            sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
           end
-        else
-          @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
-          sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
-        end
         rescue StandardError => e
           @logger.fatal "Exiting because message receiving thread died. Exception causing this: #{e.inspect}"
           this.stop # allow any queues and/or running jobs to complete

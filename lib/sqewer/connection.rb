@@ -9,6 +9,7 @@ class Sqewer::Connection
   DEFAULT_TIMEOUT_SECONDS = 5
   BATCH_RECEIVE_SIZE = 10
   MAX_RANDOM_FAILURES_PER_CALL = 10
+  MAX_RANDOM_RECEIVE_FAILURES = 100 # sure to hit the max_elapsed_time of 900 seconds
 
   NotOurFaultAwsError = Class.new(StandardError)
 
@@ -46,7 +47,7 @@ class Sqewer::Connection
   #
   # @return [Array<Message>] an array of Message objects 
   def receive_messages
-    Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_FAILURES_PER_CALL*10 do
+    Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_RECEIVE_FAILURES do
       response = client.receive_message(queue_url: @queue_url,
         wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: BATCH_RECEIVE_SIZE)
       response.messages.map {|message| Message.new(message.receipt_handle, message.body) }

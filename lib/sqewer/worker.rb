@@ -33,6 +33,9 @@ class Sqewer::Worker
   # @return [Fixnum] the number of worker threads set up for this Worker
   attr_reader :num_threads
 
+  # @return [Symbol] the current state of this Worker
+  attr_reader :state
+
   # Returns a Worker instance, configured based on the default components
   #
   # @return [Sqewer::Worker]
@@ -94,22 +97,28 @@ class Sqewer::Worker
 
     # Create the provider thread. When the execution queue is exhausted,
     # grab new messages and place them on the local queue.
+    owning_worker = self # self won't be self anymore in the thread
     provider = Thread.new do
       loop do
-        break if stopping?
+        begin
+          break if stopping?
 
-        if queue_has_capacity?
-          messages = @connection.receive_messages
-          if messages.any?
-            messages.each {|m| @execution_queue << m }
-            @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
+          if queue_has_capacity?
+            messages = @connection.receive_messages
+            if messages.any?
+              messages.each {|m| @execution_queue << m }
+              @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
+            else
+              @logger.debug { "[worker] No messages received" }
+              Thread.pass
+            end
           else
-            @logger.debug { "[worker] No messages received" }
-            Thread.pass
+            @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
+            sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
           end
-        else
-          @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }
-          sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
+        rescue StandardError => e
+          @logger.fatal "Exiting because message receiving thread died. Exception causing this: #{e.inspect}"
+          owning_worker.stop # allow any queues and/or running jobs to complete
         end
       end
     end
@@ -158,7 +167,7 @@ class Sqewer::Worker
     true
   end
 
-  # Peforms a hard shutdown by killing all the threads
+  # Performs a hard shutdown by killing all the threads
   def kill
     @state.transition! :stopping
     @logger.info { '[worker] Killing (unclean shutdown), will kill all threads'}

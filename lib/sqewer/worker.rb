@@ -97,7 +97,7 @@ class Sqewer::Worker
 
     # Create the provider thread. When the execution queue is exhausted,
     # grab new messages and place them on the local queue.
-    this = self # self won't be self anymore in the thread
+    owning_worker = self # self won't be self anymore in the thread
     provider = Thread.new do
       loop do
         begin
@@ -118,7 +118,7 @@ class Sqewer::Worker
           end
         rescue StandardError => e
           @logger.fatal "Exiting because message receiving thread died. Exception causing this: #{e.inspect}"
-          this.stop # allow any queues and/or running jobs to complete
+          owning_worker.stop # allow any queues and/or running jobs to complete
         end
       end
     end

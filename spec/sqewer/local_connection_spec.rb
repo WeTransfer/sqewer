@@ -25,20 +25,4 @@ describe Sqewer::LocalConnection do
     messages = conn.receive_messages
     expect(messages).to be_empty
   end
-
-  describe '#send_multiple_messages' do
-    it 'sends 100 messages' do
-      conn = described_class.new('https://fake-queue.com')
-      conn.send_multiple_messages do | b |
-        102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
-      end
-    end
-
-    it 'retries the message if it fails with a random AWS error' do
-      conn = described_class.new('https://fake-queue.com')
-      conn.send_multiple_messages do | b |
-        b.send_message("Hello - #{SecureRandom.uuid}")
-      end
-    end
-  end
 end

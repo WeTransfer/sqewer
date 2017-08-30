@@ -36,7 +36,7 @@ class Sqewer::Connection
       new(uri.to_s)
     end
   rescue KeyError => e
-    raise "SQS_QUEUE_URL not set in the environment. This is the queue URL that the default that Sqewer uses"
+    raise "SQS_QUEUE_URL not set in the environment. This is the queue URL Sqewer uses by default."
   end
 
   # Initializes a new adapter, with access to the SQS queue at the given URL.

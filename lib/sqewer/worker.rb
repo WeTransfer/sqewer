@@ -110,7 +110,7 @@ class Sqewer::Worker
               @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
             else
               @logger.debug { "[worker] No messages received" }
-              Thread.pass
+              sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
             end
           else
             @logger.debug { "[worker] Cache is full (%d items), postponing receive" % @execution_queue.length }

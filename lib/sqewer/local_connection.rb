@@ -115,18 +115,18 @@ class Sqewer::LocalConnection < Sqewer::Connection
   end
 
   def persist_messages(messages)
+    epoch = Time.now.to_i
     bodies_and_deliver_afters = messages.map do |msg|
-      [msg.fetch(:message_body), Time.now.to_i + msg.fetch(:delay_seconds, 0)]
+      [msg.fetch(:message_body), epoch + msg.fetch(:delay_seconds, 0)]
     end
-    fake_last_delivery_t = Time.now.to_i
-    
+
     with_db do |db|
       db.execute("BEGIN")
       bodies_and_deliver_afters.map do |body, deliver_after_epoch|
         db.execute("INSERT INTO sqewer_messages_v1
           (queue_url, receipt_handle, message_body, deliver_after_epoch, last_delivery_at_epoch)
           VALUES(?, ?, ?, ?, ?)",
-          @queue_url.to_s, SecureRandom.uuid, body, deliver_after_epoch, fake_last_delivery_t)
+          @queue_url.to_s, SecureRandom.uuid, body, deliver_after_epoch, epoch)
       end
       db.execute("COMMIT")
     end

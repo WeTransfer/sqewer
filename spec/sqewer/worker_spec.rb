@@ -65,7 +65,8 @@ describe Sqewer::Worker, :sqs => true do
       fake_conn = double('bad connection')
       allow(fake_conn).to receive(:receive_messages).and_raise("boom")
 
-      worker = described_class.new(logger: test_logger, connection: fake_conn)
+      log_device = StringIO.new('')
+      worker = described_class.new(logger: Logger.new(log_device), connection: fake_conn)
 
       expect(worker).to receive(:stop).at_least(:once)
       expect(worker).not_to receive(:kill)
@@ -73,7 +74,7 @@ describe Sqewer::Worker, :sqs => true do
       worker.start
       wait_for(worker.state.in_state?(:stopped))
       wait_for{
-        test_logger.instance_eval { @logdev.dev.string }
+        log_device.string
       }.to include("boom")
     end
   end

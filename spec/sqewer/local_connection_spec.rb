@@ -1,7 +1,14 @@
 require_relative '../spec_helper'
 
 describe Sqewer::LocalConnection do
-  let(:temp_db_uri) { 'sqlite3:/%s/sqewer.sqlite3' % Dir.pwd }
+  around :each do |example|
+    Dir.mktmpdir do |tmpdir_path|
+      @tempdir_path = tmpdir_path
+      example.run
+    end
+  end
+
+  let(:temp_db_uri) { 'sqlite3:/%s/sqewer.sqlite3' % @tempdir_path }
 
   it 'honors the given database path and queue name' do
     Dir.mktmpdir do |tempdir_path|

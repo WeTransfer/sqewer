@@ -25,11 +25,18 @@ class Sqewer::Connection
   end
 
   # Returns the default adapter, connected to the queue set via the `SQS_QUEUE_URL`
-  # environment variable.
+  # environment variable. Switches to SQLite-backed local queue if the SQS_QUEUE_URL
+  # is prefixed with 'sqlite3://'
   def self.default
-    new(ENV.fetch('SQS_QUEUE_URL'))
+    url_str = ENV.fetch('SQS_QUEUE_URL')
+    uri = URI(url_str)
+    if uri.scheme == 'sqlite3'
+      Sqewer::LocalConnection.new(uri.to_s)
+    else
+      new(uri.to_s)
+    end
   rescue KeyError => e
-    raise "SQS_QUEUE_URL not set in the environment. This is the queue URL that the default that Sqewer uses"
+    raise "SQS_QUEUE_URL not set in the environment. This is the queue URL Sqewer uses by default."
   end
 
   # Initializes a new adapter, with access to the SQS queue at the given URL.

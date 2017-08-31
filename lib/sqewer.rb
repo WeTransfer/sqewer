@@ -1,7 +1,8 @@
 # The enclosing module for the library
 module Sqewer
-  # Eager-load everything except extensions
-  Dir.glob(__dir__ + '/**/*.rb').each do |path|
+  # Eager-load everything except extensions. Sort to ensure
+  # the files load in the same order on all platforms.
+  Dir.glob(__dir__ + '/**/*.rb').sort.each do |path|
     if path != __FILE__ && File.dirname(path) !~ /\/extensions$/
       require path
     end

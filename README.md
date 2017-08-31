@@ -347,9 +347,7 @@ it will not be free. We think that this is an acceptable workaround for now, tho
 you may be better off using a Rails scheduling system and use a cron job or similar to spin up your enqueue
 for the actual, executable background task.
 
-## Frequently asked questions (A.K.A. _why is it done this way_)
-
-# FAQ
+# Frequently asked questions (A.K.A. _why is it done this way_)
 
 This document tries to answer some questions that may arise when reading or using the library. Hopefully
 this can provide some answers with regards to how things are put together.

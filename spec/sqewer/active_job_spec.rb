@@ -27,30 +27,24 @@ end
 # Required so that the IDs for ActiveModel objects get generated correctly
 GlobalID.app = 'test-app'
 
+# Otherwise it is too talkative
+ActiveJob::Base.logger = Sqewer::NullLogger
+
 class User < ActiveRecord::Base
   include GlobalID::Identification
 end
 
 describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
-  let(:file) { File.join(Dir.tmpdir, "file_active_job_test_1") }
-  let(:client) { ::Aws::SQS::Client.new }
 
-  after :all do
-    ENV['SQS_QUEUE_URL'] = @previous_queue_url
-
-    # Ensure database files get killed afterwards
-    File.unlink(ActiveRecord::Base.connection_config[:database]) rescue nil
-  end
-
-  before :all do
-    ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter
-
+  before :each do
     # Rewire the queue to use SQLite
     @previous_queue_url = ENV['SQS_QUEUE_URL']
-    ENV['SQS_QUEUE_URL'] = 'sqlite3://aj_test.sqlite3'
-    
+    ENV['SQS_QUEUE_URL'] = 'sqlite3:/%s/sqewer-temp.sqlite3' % Dir.pwd
+
+    ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter
+
     test_seed_name = SecureRandom.hex(4)
-    ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: ('master_db_%s.sqlite3' % test_seed_name))
+    ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: '%s/workdb.sqlite3' % Dir.pwd)
 
     ActiveRecord::Migration.suppress_messages do
       ActiveRecord::Schema.define(:version => 1) do
@@ -61,61 +55,41 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
         end
       end
     end
+
+    @worker = Sqewer::Worker.default
+    @worker.start
   end
 
-  before do
-    @queue_url_hash = { queue_url: ENV['SQS_QUEUE_URL'] }
+  after :each do
+    ENV['SQS_QUEUE_URL'] = @previous_queue_url
+    @worker.stop
+
+    # Ensure database files get killed afterwards
+    File.unlink(ActiveRecord::Base.connection_config[:database]) rescue nil
   end
 
-  it "sends job to the queue" do
-    CreateFileJob.perform_later(file)
-    resp = client.get_queue_attributes(@queue_url_hash.merge(attribute_names: ["ApproximateNumberOfMessages"]))
-    expect(resp.attributes["ApproximateNumberOfMessages"].to_i).to eq(1)
+  it "executes the CreateFileJob, both immediately and with a delay using set()" do
+    wait_for { @worker.state }.to be_in_state(:running)
+
+    tmpdir = Dir.mktmpdir
+    CreateFileJob.perform_later(tmpdir + '/immediate')
+    CreateFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
+
+    wait_for { File.exist?(tmpdir + '/immediate') }.to eq(true)
+
+    expect(File).not_to be_exist(tmpdir + '/delayed')
+
+    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(true)
   end
 
-  it "correctly serializes the job into a Sqewer job" do
-    job = CreateFileJob.perform_later(file)
-    resp = client.receive_message(@queue_url_hash)
-    serialized_job = JSON.parse(resp.messages.last.body)
+  it "switches the attribute on the given User" do
+    wait_for { @worker.state }.to be_in_state(:running)
 
-    expect(serialized_job["_job_class"]).to eq("ActiveJob::QueueAdapters::SqewerAdapter::Performable")
-    expect(serialized_job["_job_params"]["job"]["job_id"]).to eq(job.job_id)
-  end
-
-  it "executes job from the queue" do
-    file_delayed = "#{file}_delayed"
-    CreateFileJob.perform_later(file)
-    CreateFileJob.perform_later(file_delayed)
-    w = Sqewer::Worker.default
-    w.start
-    begin
-      wait_for { File.exist?(file) }.to eq(true)
-      File.unlink(file)
-
-      wait_for { File.exist?(file_delayed) }.to eq(true)
-      DeleteFileJob.set(wait: 2.seconds).perform_later(file_delayed)
-
-      sleep 4
-
-      expect(File.exist?(file_delayed)).to eq(false)
-    ensure
-      w.stop
-    end
-  end
-
-  it "serializes and deserializes active record using GlobalID" do
     user = User.create(email: 'test@wetransfer.com')
     expect(user.active).to eq(false)
-    ActivateUser.perform_later(user)
-    w = Sqewer::Worker.default
-    begin
-      w.start
-      sleep 4
-      user.reload
-      expect(user.active).to eq(true)
-    ensure
-      w.stop
-    end
-  end
 
+    ActivateUser.perform_later(user)
+    
+    wait_for { user.reload.active? }.to eq(true)
+  end
 end

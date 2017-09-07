@@ -24,7 +24,9 @@ class ActivateUser < ActiveJob::Base
   end
 end
 
+# Required so that the IDs for ActiveModel objects get generated correctly
 GlobalID.app = 'test-app'
+
 class User < ActiveRecord::Base
   include GlobalID::Identification
 end
@@ -34,6 +36,8 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
   let(:client) { ::Aws::SQS::Client.new }
 
   after :all do
+    ENV['SQS_QUEUE_URL'] = @previous_queue_url
+
     # Ensure database files get killed afterwards
     File.unlink(ActiveRecord::Base.connection_config[:database]) rescue nil
   end
@@ -41,6 +45,10 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
   before :all do
     ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter
 
+    # Rewire the queue to use SQLite
+    @previous_queue_url = ENV['SQS_QUEUE_URL']
+    ENV['SQS_QUEUE_URL'] = 'sqlite3://aj_test.sqlite3'
+    
     test_seed_name = SecureRandom.hex(4)
     ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: ('master_db_%s.sqlite3' % test_seed_name))
 
@@ -83,12 +91,12 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     begin
       wait_for { File.exist?(file) }.to eq(true)
       File.unlink(file)
-      
+
       wait_for { File.exist?(file_delayed) }.to eq(true)
-      DeleteFileJob.set(wait: 5.seconds).perform_later(file_delayed)
-      
-      sleep 6
-      
+      DeleteFileJob.set(wait: 2.seconds).perform_later(file_delayed)
+
+      sleep 4
+
       expect(File.exist?(file_delayed)).to eq(false)
     ensure
       w.stop

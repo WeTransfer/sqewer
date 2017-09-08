@@ -7,7 +7,7 @@ module Sqewer
       require path
     end
   end
-  
+
   # Loads a particular Sqewer extension that is not loaded
   # automatically during the gem require.
   #
@@ -16,7 +16,7 @@ module Sqewer
     path = File.join("sqewer", "extensions", extension_name)
     require_relative path
   end
-    
+
   # Shortcut access to Submitter#submit.
   #
   # @see {Sqewer::Submitter#submit!}

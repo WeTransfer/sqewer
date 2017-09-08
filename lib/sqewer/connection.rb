@@ -43,7 +43,7 @@ class Sqewer::Connection
   #
   # @param queue_url[String] the SQS queue URL (the URL can be copied from your AWS console)
   def initialize(queue_url)
-    require 'aws-sdk'
+    require 'aws-sdk-sqs'
     @queue_url = queue_url
   end
 

@@ -24,6 +24,17 @@ class ActivateUser < ActiveJob::Base
   end
 end
 
+class TestKeyArgument < ActiveJob::Base
+  queue_as :special
+
+  def perform(key_one:, key_two:, key_three:)
+    puts "this is key_one: #{key_one}"
+    puts "this is key_one: #{key_two}"
+    puts "this is key_one: #{key_three}"
+  end
+end
+
+
 # Required so that the IDs for ActiveModel objects get generated correctly
 GlobalID.app = 'test-app'
 
@@ -91,5 +102,17 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     ActivateUser.perform_later(user)
     
     wait_for { user.reload.active? }.to eq(true)
+  end
+
+  it 'Take key argument and make sure they are passed and worker succeeds' do
+    wait_for { @worker.state }.to be_in_state(:running)
+
+    worker = TestKeyArgument.perform_later(key_one: 'foo', key_two: 'bar', key_three: 'baz')
+
+    expect(worker.arguments[0].keys).to include(:key_one, 
+                                                :key_two, 
+                                                :key_three)
+    
+    # This needs an extra check if worker is succesfull
   end
 end

@@ -13,7 +13,7 @@ end
 
 class DeleteFileJob < ActiveJob::Base
   def perform(file)
-    File.unlink(file)
+    FileUtils.remove_entry(file)
   end
 end
 
@@ -118,6 +118,12 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     expect(File).not_to be_exist(tmpdir + '/delayed')
 
     wait_for { File.exist?(tmpdir + '/delayed') }.to eq(true)
+
+    DeleteFileJob.perform_later(tmpdir + '/immediate')
+    wait_for { File.exist?(tmpdir + '/immediate') }.to eq(false)
+
+    DeleteFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
+    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)    
   end
 
   it "switches the attribute on the given User" do
@@ -138,7 +144,10 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     CreatefileWithOptionsArgument.perform_later(file: tmpdir + '/test',
                                                 option: 'w')
 
-    wait_for { File.exist?(tmpdir) }.to eq(true)
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(true)
+    
+    DeleteFileJob.perform_later( tmpdir + '/test')
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(false)
   end
 
   it 'creates a user and starts a job to edit the user based on the option arguments' do
@@ -161,7 +170,10 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     CreateFileWithKeyArgument.perform_later(file: tmpdir + '/test',
                                             option: 'w')
 
-    wait_for { File.exist?(tmpdir) }.to eq(true)
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(true)
+
+    DeleteFileJob.perform_later( tmpdir + '/test')
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(false)
   end
 
   it 'creates a user and starts a job to edit the user based on the keyword arguments' do

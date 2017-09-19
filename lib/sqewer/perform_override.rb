@@ -2,14 +2,16 @@
 # of ActiveJob Execute. 
 module PerformWithKeywords
   def perform_now
-    deserialize_arguments_if_needed
-    run_callbacks :perform do
-      args_with_symbolized_options = arguments.map do |a|
-        a.respond_to?(:symbolize_keys) ? a.symbolize_keys : a
+    begin
+      deserialize_arguments_if_needed
+      run_callbacks :perform do
+        args_with_symbolized_options = arguments.map do |a|
+          a.respond_to?(:symbolize_keys) ? a.symbolize_keys : a
+        end
+        perform(*args_with_symbolized_options)
       end
-      perform(*args_with_symbolized_options)
+    rescue => exception
+      rescue_with_handler(exception) || raise(exception)
     end
-  rescue => exception
-    rescue_with_handler(exception) || raise(exception)
   end
 end

@@ -131,7 +131,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     wait_for { user.reload.active? }.to eq(true)
   end
 
-  it 'Create file by options given with option arguments' do
+  it 'creates a file with option arguments and checks if it exists' do
     wait_for { @worker.state }.to be_in_state(:running)
 
     tmpdir = Dir.mktmpdir
@@ -141,18 +141,20 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     wait_for { File.exist?(tmpdir) }.to eq(true)
   end
 
-  it 'Create user with the values given in the options arguments' do
+  it 'creates a user and starts a job to edit the user based on the option arguments' do
     wait_for { @worker.state }.to be_in_state(:running)
 
     user = User.create(name: 'John')
-    EditUserWithOptionsArgument.perform_later(user: user, email: 'test@wetransfer.com', active: true)
+    EditUserWithOptionsArgument.perform_later(user: user, 
+                                              email: 'test@wetransfer.com',
+                                              active: true)
 
     wait_for { user.reload.email }.to eq('test@wetransfer.com')
     wait_for { user.reload.active? }.to eq(true)
 
   end
 
-  it 'Create file given by the keyword arguments' do
+  it 'creates a tempdir with keyword arguments and checks if it exists' do
     wait_for { @worker.state }.to be_in_state(:running)
 
     tmpdir = Dir.mktmpdir
@@ -162,11 +164,13 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     wait_for { File.exist?(tmpdir) }.to eq(true)
   end
 
-  it 'Create user with the values given in the keyword arguments' do
+  it 'creates a user and starts a job to edit the user based on the keyword arguments' do
     wait_for { @worker.state }.to be_in_state(:running)
 
     user = User.create(name: 'John')
-    EditUserWithKeyArguments.perform_later(user: user, email: 'test@wetransfer.com', active: true)
+    EditUserWithKeyArguments.perform_later(user: user,
+                                           email: 'test@wetransfer.com',
+                                           active: true)
 
     wait_for { user.reload.email }.to eq('test@wetransfer.com')
     wait_for { user.reload.active? }.to eq(true)

@@ -1,8 +1,14 @@
 # ActiveJob docs: http://edgeguides.rubyonrails.org/active_job_basics.html
 # Example adapters ref: https://github.com/rails/rails/tree/master/activejob/lib/active_job/queue_adapters
 module ActiveJob
+  # Only prepend the module with keyword agrument acceptance when the version is 4
+  # ActiveJob 5.x supports kwargs out of the box
+  if ActiveJob::VERSION::MAJOR <= 4
+    module Execution
+      prepend PerformWithKeywords
+    end
+  end
   module QueueAdapters
-
     # Handle Rails ActiveJob through sqewer.
     # Set it up like so:
     #
@@ -72,7 +78,6 @@ module ActiveJob
           Sqewer.submit!(wrapped_job, delay_seconds: delta_t)
         end
       end
-
     end
   end
 end

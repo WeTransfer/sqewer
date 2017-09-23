@@ -13,7 +13,7 @@ end
 
 class DeleteFileJob < ActiveJob::Base
   def perform(file)
-    File.unlink(file)
+    FileUtils.remove_entry(file)
   end
 end
 
@@ -23,6 +23,43 @@ class ActivateUser < ActiveJob::Base
     user.save!
   end
 end
+
+class CreatefileWithOptionsArgument < ActiveJob::Base
+
+  def perform(*args)
+    File.open(args[0][:file], args[0][:option]) {}
+  end
+
+end
+
+class EditUserWithOptionsArgument < ActiveJob::Base
+
+  def perform(*args)
+    user = args[0][:user]
+    user.email = args[0][:email]
+    user.active = args[0][:active]
+    user.save!
+  end
+end
+
+class CreateFileWithKeyArgument < ActiveJob::Base
+  queue_as :special
+
+  def perform(file:, option:)
+    File.open(file, option) {}
+  end
+
+end
+
+class EditUserWithKeyArguments < ActiveJob::Base
+
+  def perform(user:, email:, active:)
+    user.email = email
+    user.active = active
+    user.save!
+  end
+end
+
 
 # Required so that the IDs for ActiveModel objects get generated correctly
 GlobalID.app = 'test-app'
@@ -47,11 +84,12 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: '%s/workdb.sqlite3' % Dir.pwd)
 
     ActiveRecord::Migration.suppress_messages do
-      ActiveRecord::Schema.define(:version => 1) do
+      ActiveRecord::Schema.define(version: 1) do
         create_table :users do |t|
-          t.string :email, :null => true
+          t.string :name, null: true
+          t.string :email, null: true
           t.boolean :active, default: false
-          t.timestamps :null => false
+          t.timestamps null: false
         end
       end
     end
@@ -80,6 +118,12 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     expect(File).not_to be_exist(tmpdir + '/delayed')
 
     wait_for { File.exist?(tmpdir + '/delayed') }.to eq(true)
+
+    DeleteFileJob.perform_later(tmpdir + '/immediate')
+    wait_for { File.exist?(tmpdir + '/immediate') }.to eq(false)
+
+    DeleteFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
+    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)    
   end
 
   it "switches the attribute on the given User" do
@@ -91,5 +135,57 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     ActivateUser.perform_later(user)
     
     wait_for { user.reload.active? }.to eq(true)
+  end
+
+  it 'creates a file with option arguments and checks if it exists' do
+    wait_for { @worker.state }.to be_in_state(:running)
+
+    tmpdir = Dir.mktmpdir
+    CreatefileWithOptionsArgument.perform_later(file: tmpdir + '/test',
+                                                option: 'w')
+
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(true)
+    
+    DeleteFileJob.perform_later( tmpdir + '/test')
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(false)
+  end
+
+  it 'creates a user and starts a job to edit the user based on the option arguments' do
+    wait_for { @worker.state }.to be_in_state(:running)
+
+    user = User.create(name: 'John')
+    EditUserWithOptionsArgument.perform_later(user: user, 
+                                              email: 'test@wetransfer.com',
+                                              active: true)
+
+    wait_for { user.reload.email }.to eq('test@wetransfer.com')
+    wait_for { user.reload.active? }.to eq(true)
+
+  end
+
+  it 'creates a tempdir with keyword arguments and checks if it exists' do
+    wait_for { @worker.state }.to be_in_state(:running)
+
+    tmpdir = Dir.mktmpdir
+    CreateFileWithKeyArgument.perform_later(file: tmpdir + '/test',
+                                            option: 'w')
+
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(true)
+
+    DeleteFileJob.perform_later( tmpdir + '/test')
+    wait_for { File.exist?( tmpdir + '/test') }.to eq(false)
+  end
+
+  it 'creates a user and starts a job to edit the user based on the keyword arguments' do
+    wait_for { @worker.state }.to be_in_state(:running)
+
+    user = User.create(name: 'John')
+    EditUserWithKeyArguments.perform_later(user: user,
+                                           email: 'test@wetransfer.com',
+                                           active: true)
+
+    wait_for { user.reload.email }.to eq('test@wetransfer.com')
+    wait_for { user.reload.active? }.to eq(true)
+
   end
 end

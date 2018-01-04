@@ -1,5 +1,11 @@
 # The enclosing module for the library
 module Sqewer
+
+  # To be included into the timeout error classes of the HTTP clients
+  module RetriableError; end
+  # For errors that shouldn't be retried
+  module TerminalError; end
+
   # Eager-load everything except extensions. Sort to ensure
   # the files load in the same order on all platforms.
   Dir.glob(__dir__ + '/**/*.rb').sort.each do |path|
@@ -23,7 +29,7 @@ module Sqewer
   def self.submit!(*jobs, **options)
     Sqewer::Submitter.default.submit!(*jobs, **options)
   end
-  
+
   # If we are within Rails, load the railtie
   require_relative 'sqewer/extensions/railtie' if defined?(Rails)
 

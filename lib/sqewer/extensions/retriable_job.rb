@@ -7,6 +7,10 @@ module Sqewer::RetriableJob
     include TerminalError
   end
 
+  class ObjectMissing < StandardError
+    include TerminalError
+  end
+
   def self.included(into)
     into.send(:attr_accessor, :retries)
     super

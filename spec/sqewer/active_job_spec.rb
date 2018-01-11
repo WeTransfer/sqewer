@@ -85,6 +85,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
     ActiveRecord::Migration.suppress_messages do
       ActiveRecord::Schema.define(version: 1) do
+        drop_table :users if (table_exists? :users)
         create_table :users do |t|
           t.string :name, null: true
           t.string :email, null: true
@@ -123,7 +124,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     wait_for { File.exist?(tmpdir + '/immediate') }.to eq(false)
 
     DeleteFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
-    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)    
+    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)
   end
 
   it "switches the attribute on the given User" do
@@ -133,7 +134,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     expect(user.active).to eq(false)
 
     ActivateUser.perform_later(user)
-    
+
     wait_for { user.reload.active? }.to eq(true)
   end
 
@@ -145,7 +146,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
                                                 option: 'w')
 
     wait_for { File.exist?( tmpdir + '/test') }.to eq(true)
-    
+
     DeleteFileJob.perform_later( tmpdir + '/test')
     wait_for { File.exist?( tmpdir + '/test') }.to eq(false)
   end
@@ -154,7 +155,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     wait_for { @worker.state }.to be_in_state(:running)
 
     user = User.create(name: 'John')
-    EditUserWithOptionsArgument.perform_later(user: user, 
+    EditUserWithOptionsArgument.perform_later(user: user,
                                               email: 'test@wetransfer.com',
                                               active: true)
 

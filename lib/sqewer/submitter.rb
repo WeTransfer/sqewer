@@ -19,7 +19,8 @@ class Sqewer::Submitter < Struct.new(:connection, :serializer)
     else
       serializer.serialize(job)
     end
-    connection.send_message(message_body, **kwargs_for_send)
+    msg = Sqewer::Message.new(body: message_body, delay_seconds: clamped_delay)
+    connection.send_messages([msg])
   end
   
   private

@@ -40,16 +40,15 @@ class Sqewer::LocalConnection < Sqewer::Connection
 
   # @return [Array<Message>] an array of Message objects 
   def receive_messages
-    messages = load_receipt_handles_and_bodies
-    messages.map {|message| Message.new(message[0], message[1]) }
+    message_rows = load_receipt_handles_and_bodies
+    message_rows.map do |message|
+      Sqewer::Message.new(receipt_handle: message[0], body: message[1])
+    end
   end
 
   # @yield [#send_message] the object you can send messages through (will be flushed at method return)
   # @return [void]
-  def send_multiple_messages
-    buffer = SendBuffer.new
-    yield(buffer)
-    messages = buffer.messages
+  def send_messages(messages)
     persist_messages(messages)
   end
 
@@ -57,10 +56,8 @@ class Sqewer::LocalConnection < Sqewer::Connection
   #
   # @yield [#delete_message] an object you can delete an individual message through
   # @return [void]
-  def delete_multiple_messages
-    buffer = DeleteBuffer.new
-    yield(buffer)
-    delete_persisted_messages(buffer.messages)
+  def delete_messages(messages)
+    delete_persisted_messages(messages)
   end
 
   # Only gets used in tests
@@ -87,7 +84,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
   end
 
   def delete_persisted_messages(messages)
-    ids_to_delete = messages.map{|m| m.fetch(:receipt_handle) }
+    ids_to_delete = messages.map{|m| m.receipt_handle }
     with_db do |db|
       db.execute("BEGIN")
       ids_to_delete.each do |id|
@@ -137,7 +134,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
   def persist_messages(messages)
     epoch = Time.now.to_i
     bodies_and_deliver_afters = messages.map do |msg|
-      [msg.fetch(:message_body), epoch + msg.fetch(:delay_seconds, 0)]
+      [msg.body, epoch + msg.delay_seconds.to_i]
     end
 
     with_db do |db|

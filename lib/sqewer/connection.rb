@@ -7,21 +7,11 @@
 # * any execution that ends with an exception should cause the message to be re-enqueued
 class Sqewer::Connection
   DEFAULT_TIMEOUT_SECONDS = 5
-  BATCH_RECEIVE_SIZE = 10
+  BATCH_SIZE = 10 # Same maximum for send, delete and receive batch
   MAX_RANDOM_FAILURES_PER_CALL = 10
   MAX_RANDOM_RECEIVE_FAILURES = 100 # sure to hit the max_elapsed_time of 900 seconds
 
-  NotOurFaultAwsError = Class.new(StandardError)
-
-  # A wrapper for most important properties of the received message
-  class Message < Struct.new(:receipt_handle, :body)
-    def inspect
-      body.inspect
-    end
-
-    def has_body?
-      body && !body.empty?
-    end
+  class AwsError < StandardError
   end
 
   # Returns the default adapter, connected to the queue set via the `SQS_QUEUE_URL`
@@ -56,84 +46,55 @@ class Sqewer::Connection
   def receive_messages
     Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_RECEIVE_FAILURES do
       response = client.receive_message(queue_url: @queue_url,
-        wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: BATCH_RECEIVE_SIZE)
-      response.messages.map {|message| Message.new(message.receipt_handle, message.body) }
+        wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: BATCH_SIZE)
+      response.messages.map do |message|
+        Sqewer::Message.new(receipt_handle: message.receipt_handle, body: message.body)
+      end
     end
   end
 
   # Send a message to the backing queue
   #
-  # @param message_body[String] the message to send
-  # @param kwargs_for_send[Hash] additional arguments for the submit (such as `delay_seconds`).
-  # Passes the arguments to the AWS SDK. 
+  # @param messages[Array<Sqewer::Message>] the messages to send
   # @return [void]
-  def send_message(message_body, **kwargs_for_send)
-    send_multiple_messages {|via| via.send_message(message_body, **kwargs_for_send) }
-  end
-
-  # Stores the messages for the SQS queue (both deletes and sends), and yields them in allowed batch sizes
-  class MessageBuffer < Struct.new(:messages)
-    MAX_RECORDS = 10
-    def initialize
-      super([])
+  def send_messages(messages)
+    in_batches_of(messages, BATCH_SIZE) do |batch|
+      params = batch.map{|msg| message_to_send_parameters(msg) }
+      handle_batch_with_retries(:send_message_batch, params)
     end
-    def each_batch
-      messages.each_slice(MAX_RECORDS){|batch| yield(batch)}
-    end
-  end
-
-  # Saves the messages to send to the SQS queue
-  class SendBuffer < MessageBuffer
-    def send_message(message_body, **kwargs_for_send)
-      # The "id" is only valid _within_ the request, and is used when
-      # an error response refers to a specific ID within a batch
-      m = {message_body: message_body, id: messages.length.to_s}
-      m[:delay_seconds] = kwargs_for_send[:delay_seconds] if kwargs_for_send[:delay_seconds]
-      messages << m
-    end
-  end
-
-  # Saves the receipt handles to batch-delete from the SQS queue
-  class DeleteBuffer < MessageBuffer
-    def delete_message(receipt_handle)
-      # The "id" is only valid _within_ the request, and is used when
-      # an error response refers to a specific ID within a batch
-      m = {receipt_handle: receipt_handle, id: messages.length.to_s}
-      messages << m
-    end
-  end
-
-  # Send multiple messages. If any messages fail to send, an exception will be raised.
-  #
-  # @yield [#send_message] the object you can send messages through (will be flushed at method return)
-  # @return [void]
-  def send_multiple_messages
-    buffer = SendBuffer.new
-    yield(buffer)
-
-    buffer.each_batch {|batch| handle_batch_with_retries(:send_message_batch, batch) }
-  end
-
-  # Deletes a message after it has been succesfully decoded and processed
-  #
-  # @param message_identifier[String] the ID of the message to delete. For SQS, it is the receipt handle
-  # @return [void]
-  def delete_message(message_identifier)
-    delete_multiple_messages {|via| via.delete_message(message_identifier) }
   end
 
   # Deletes multiple messages after they all have been succesfully decoded and processed.
   #
-  # @yield [#delete_message] an object you can delete an individual message through
   # @return [void]
-  def delete_multiple_messages
-    buffer = DeleteBuffer.new
-    yield(buffer)
-
-    buffer.each_batch {|batch| handle_batch_with_retries(:delete_message_batch, batch) }
+  def delete_messages(messages)
+    in_batches_of(messages, BATCH_SIZE) do |batch|
+      params = batch.map{|msg| message_to_delete_parameters(msg) }
+      handle_batch_with_retries(:delete_message_batch, params)
+    end
   end
 
   private
+
+  def message_to_send_parameters(message)
+    {id: message.id, delay_seconds: message.delay_seconds.to_i, message_body: message.body}
+  end
+
+  def message_to_delete_parameters(message)
+    {id: message.id, receipt_handle: message.receipt_handle}
+  end
+
+  def in_batches_of(enum, n)
+    batch = []
+    enum.each do |item|
+      if batch.length >= n
+        yield(batch)
+        batch.clear
+      end
+      batch << item
+    end
+    yield(batch) if batch.any?
+  end
 
   def handle_batch_with_retries(method, batch)
     Retriable.retriable on: [NotOurFaultAwsError, Seahorse::Client::NetworkingError], tries: MAX_RANDOM_FAILURES_PER_CALL do
@@ -143,12 +104,14 @@ class Sqewer::Connection
         err = wrong_messages.inspect + ', ' + resp.inspect
         raise "#{wrong_messages.length} messages failed while doing #{method.to_s} with error: #{err}"
       elsif aws_failures.any?
-        # We set the 'batch' param to an array with only the failed messages so only those get retried
-        batch = aws_failures.map {|aws_response_message| batch.find { |m| aws_response_message.id.to_s == m[:id] }}
+        # We reset the 'batch' array to only contain the failed messages so only those get retried
+        failed_ids = aws_failure_ids.map{|e| e.id.to_s }
+        batch = batch.select {|e| failed_ids.include?(e[:id]) }
         raise NotOurFaultAwsError
       end
     end
   end
+
 
   def client
     @client ||= Aws::SQS::Client.new

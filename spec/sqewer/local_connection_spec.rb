@@ -28,7 +28,7 @@ describe Sqewer::LocalConnection do
   it 'handles a full send/receive/delete cycle' do
     conn = described_class.new(temp_db_uri)
     conn.truncate!
-    conn.send_multiple_messages do | b |
+    conn.send_messages do | b |
       4.times { b.send_message("Hello - #{SecureRandom.uuid}") }
     end
     
@@ -39,7 +39,7 @@ describe Sqewer::LocalConnection do
     messages = conn.receive_messages
     expect(messages.length).to eq(0)
 
-    conn.delete_multiple_messages do | b |
+    conn.delete_messages do | b |
       messages.each do |m|
         b.delete_message(m.id)
       end
@@ -55,7 +55,7 @@ describe Sqewer::LocalConnection do
 
     producer_pid = fork do
       sleep 1.0
-      conn.send_multiple_messages do | b |
+      conn.send_messages do | b |
         b.send_message("Hello from a producer co-process!")
       end
     end
@@ -67,7 +67,7 @@ describe Sqewer::LocalConnection do
       raise "This is not what we expected. Received messages were #{msgs.inspect} but we really need 2 message to be there"
     end
 
-    conn.send_multiple_messages do | b |
+    conn.send_messages do | b |
       b.send_message("Hello from parent!")
     end
 

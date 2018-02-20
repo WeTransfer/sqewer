@@ -23,7 +23,7 @@ describe Sqewer::Connection do
       expect(fake_sqs_client).to receive(:send_message_batch).and_return(double(failed: []))
       
       conn = described_class.new('https://fake-queue.com')
-      expect(conn).to receive(:send_multiple_messages).and_call_original
+      expect(conn).to receive(:send_messages).and_call_original
       conn.send_message('abcdef')
     end
     
@@ -33,14 +33,14 @@ describe Sqewer::Connection do
       expect(fake_sqs_client).to receive(:send_message_batch).and_return(double(failed: []))
       
       conn = described_class.new('https://fake-queue.com')
-      expect(conn).to receive(:send_multiple_messages).and_call_original
+      expect(conn).to receive(:send_messages).and_call_original
       conn.send_message('abcdef', delay_seconds: 5)
     end
     
     it 'retries on networking errors'
   end
   
-  describe '#send_multiple_messages' do
+  describe '#send_messages' do
     it 'sends 100 messages' do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
@@ -59,7 +59,7 @@ describe Sqewer::Connection do
       }
       
       conn = described_class.new('https://fake-queue.com')
-      conn.send_multiple_messages do | b |
+      conn.send_messages do | b |
         102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
       end
     end
@@ -73,7 +73,7 @@ describe Sqewer::Connection do
       
       conn = described_class.new('https://fake-queue.com')
       expect {
-        conn.send_multiple_messages do | b |
+        conn.send_messages do | b |
           10.times { b.send_message("Hello - #{SecureRandom.uuid}") }
         end
       }.to raise_error(/messages failed while doing send_message_batch with error:/)
@@ -88,7 +88,7 @@ describe Sqewer::Connection do
       expect(fake_sqs_client).to receive(:send_message_batch).and_return(failed_response,failed_response,success_response).exactly(3).times
 
       conn = described_class.new('https://fake-queue.com')
-      conn.send_multiple_messages do | b |
+      conn.send_messages do | b |
         b.send_message("Hello - #{SecureRandom.uuid}")
       end
     end
@@ -101,7 +101,7 @@ describe Sqewer::Connection do
     it 'deletes a single message'
   end
   
-  describe '#delete_multiple_messages' do
+  describe '#delete_messages' do
     it 'deletes 100 messages' do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
@@ -119,7 +119,7 @@ describe Sqewer::Connection do
       }
       
       conn = described_class.new('https://fake-queue.com')
-      conn.delete_multiple_messages do | b |
+      conn.delete_messages do | b |
         102.times { b.delete_message(SecureRandom.uuid) }
       end
     end
@@ -133,7 +133,7 @@ describe Sqewer::Connection do
       
       conn = described_class.new('https://fake-queue.com')
       expect {
-        conn.delete_multiple_messages do | b |
+        conn.delete_messages do | b |
           102.times { b.delete_message(SecureRandom.uuid) }
         end
       }.to raise_error(/messages failed while doing delete_message_batch with error:/)
@@ -148,7 +148,7 @@ describe Sqewer::Connection do
       expect(fake_sqs_client).to receive(:delete_message_batch).and_return(failed_response,failed_response,success_response).exactly(3).times
 
       conn = described_class.new('https://fake-queue.com')
-      conn.delete_multiple_messages do | b |
+      conn.delete_messages do | b |
         b.delete_message("Hello - #{SecureRandom.uuid}")
       end
     end

@@ -30,7 +30,7 @@ class Sqewer::ConnectionMessagebox
   # @see {Connection#send_message}
   def send_message(message_body, **kwargs_for_send)
     @mux.synchronize {
-      @sends << [message_body, kwargs_for_send]
+      @sends << Sqewer::Message.new(body: message_body, **kwargs_for_send)
     }
   end
 
@@ -38,9 +38,9 @@ class Sqewer::ConnectionMessagebox
   # deletes in the same flush, they will be batched using batched deletes.
   #
   # @see {Connection#delete_message}
-  def delete_message(message_identifier)
+  def delete_message(receipt_handle)
     @mux.synchronize {
-      @deletes << message_identifier
+      @deletes << Sqewer::Message.new(receipt_handle: receipt_handle)
     }
   end
 
@@ -49,14 +49,9 @@ class Sqewer::ConnectionMessagebox
   # All of those will use batching where possible.
   def flush!
     @mux.synchronize do
-      @connection.send_multiple_messages do | buffer |
-        @sends.each { |body, kwargs| buffer.send_message(body, **kwargs) }
-      end
-
-      @connection.delete_multiple_messages do | buffer |
-        @deletes.each { |id| buffer.delete_message(id) }
-      end
-      (@sends.length + @deletes.length).tap{ @sends.clear; @deletes.clear }
+      @connection.send_messages(@sends)
+      @connection.delete_messages(@deletes)
+      (@sends.length + @deletes.length).tap { @sends.clear; @deletes.clear }
     end
   end
 end

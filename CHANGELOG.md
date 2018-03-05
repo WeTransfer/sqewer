@@ -1,3 +1,6 @@
+### 6.0.1
+- Fix an issue in the interaction between the Appsignal and Activejob extensions that caused all the background jobs to show up as instances of `ActiveJob::QueueAdapters::SqewerAdapter::Performable#run`.
+
 ### 6.0.0
 - Bump the supported AWS SDK to v3 and only require `aws-sdk-sqs` as a dependency. This reduces the amount of code Sqewer needs to load, as SQS is the only service we are actually using. This requires the hosting application to be updated to the SDK v3 as well.
 - Reduce spurious test failures when testing the ActiveJob adapter

@@ -41,6 +41,10 @@ module ActiveJob
           '<%s>' % [@job.inspect]
         end
 
+        def class_name
+          @job["job_class"]
+        end
+
         # Runs the contained ActiveJob.
         def run
           job = ActiveSupport::HashWithIndifferentAccess.new(@job)

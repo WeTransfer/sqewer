@@ -188,4 +188,9 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     wait_for { user.reload.active? }.to eq(true)
 
   end
+
+  it 'reports the name of the job, not the name of the Performable' do
+    job = ActiveJob::QueueAdapters::SqewerAdapter::Performable.from_active_job(CreatefileWithOptionsArgument.new)
+    expect(job.class_name).to eq("CreatefileWithOptionsArgument")
+  end
 end

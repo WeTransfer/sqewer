@@ -191,6 +191,10 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
   it 'reports the name of the job, not the name of the Performable' do
     job = ActiveJob::QueueAdapters::SqewerAdapter::Performable.from_active_job(CreatefileWithOptionsArgument.new)
-    expect(job.class_name).to eq("CreatefileWithOptionsArgument")
+    # mimic sending the job across the network
+    serialized_job = Sqewer::Serializer.default.serialize(job)
+    rematerialized_job = Sqewer::Serializer.default.unserialize(serialized_job)
+
+    expect(rematerialized_job.class_name).to eq("CreatefileWithOptionsArgument")
   end
 end

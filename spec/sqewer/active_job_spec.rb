@@ -101,6 +101,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
   after :each do
     ENV['SQS_QUEUE_URL'] = @previous_queue_url
     @worker.stop
+    wait_for { @worker.state }.to be_in_state(:stopped)
 
     # Ensure database files get killed afterwards
     File.unlink(ActiveRecord::Base.connection_config[:database]) rescue nil

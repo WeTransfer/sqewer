@@ -12,7 +12,7 @@ SimpleCov.start
 require 'sqewer'
 
 RSpec.configure do |config| 
-  # config.order = 'random'
+  config.order = 'random'
   config.around :each do | example |
     if example.metadata[:sqs]
       queue_name = 'sqewer-test-queue-%s' % SecureRandom.hex(6)

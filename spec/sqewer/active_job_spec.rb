@@ -94,6 +94,8 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
       end
     end
 
+    ActiveRecord::Base.connection.execute('PRAGMA journal_mode=WAL')
+
     @worker = Sqewer::Worker.default
     @worker.start
   end
@@ -123,8 +125,8 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     DeleteFileJob.perform_later(tmpdir + '/immediate')
     wait_for { File.exist?(tmpdir + '/immediate') }.to eq(false)
 
-    DeleteFileJob.set(wait: 5.seconds).perform_later(tmpdir + '/delayed')
-    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)    
+    DeleteFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
+    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)
   end
 
   it "switches the attribute on the given User" do

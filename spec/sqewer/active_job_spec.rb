@@ -75,8 +75,8 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
   before :each do
     # Rewire the queue to use SQLite
-    @previous_queue_url = ENV['SQS_QUEUE_URL']
-    ENV['SQS_QUEUE_URL'] = 'sqlite3:/%s/sqewer-temp.sqlite3' % Dir.pwd
+    # @previous_queue_url = ENV['SQS_QUEUE_URL']
+    # ENV['SQS_QUEUE_URL'] = 'sqlite3:/%s/sqewer-temp.sqlite3' % Dir.pwd
 
     ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter
 
@@ -101,7 +101,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
   end
 
   after :each do
-    ENV['SQS_QUEUE_URL'] = @previous_queue_url
+    # ENV['SQS_QUEUE_URL'] = @previous_queue_url
     @worker.stop
     wait_for { @worker.state }.to be_in_state(:stopped)
 

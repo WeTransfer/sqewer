@@ -112,7 +112,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
     tmpdir = Dir.mktmpdir
     CreateFileJob.perform_later(tmpdir + '/immediate')
-    CreateFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
+    CreateFileJob.set(wait: 5.seconds).perform_later(tmpdir + '/delayed')
 
     wait_for { File.exist?(tmpdir + '/immediate') }.to eq(true)
 
@@ -123,7 +123,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     DeleteFileJob.perform_later(tmpdir + '/immediate')
     wait_for { File.exist?(tmpdir + '/immediate') }.to eq(false)
 
-    DeleteFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
+    DeleteFileJob.set(wait: 5.seconds).perform_later(tmpdir + '/delayed')
     wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)    
   end
 

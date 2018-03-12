@@ -65,7 +65,7 @@ end
 GlobalID.app = 'test-app'
 
 # Otherwise it is too talkative
-ActiveJob::Base.logger = Sqewer::NullLogger
+ActiveJob::Base.logger = Sqewer::NULL_LOGGER
 
 class User < ActiveRecord::Base
   include GlobalID::Identification

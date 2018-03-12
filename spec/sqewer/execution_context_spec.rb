@@ -26,11 +26,11 @@ describe Sqewer::ExecutionContext do
     expect(default_value).to eq(123)
   end
   
-  it 'returns the NullLogger from #logger if no logger was passed to the constructor' do
+  it 'returns the NULL_LOGGER from #logger if no logger was passed to the constructor' do
     fake_submitter = double('Submitter')
     
     subject = described_class.new(fake_submitter)
-    expect(subject.logger).to eq(Sqewer::NullLogger)
+    expect(subject.logger).to eq(Sqewer::NULL_LOGGER)
   end
   
   it 'offers access to the given "logger" extra param if it was given to the constructor' do

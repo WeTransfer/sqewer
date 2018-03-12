@@ -47,11 +47,11 @@ class Sqewer::ExecutionContext
   end
 
   # Returns the logger set in the execution environment, or
-  # the NullLogger if no logger is set. Can be used to supply
+  # the NULL_LOGGER if no logger is set. Can be used to supply
   # a logger prefixed with job parameters per job.
   #
   # @return [Logger] the logger to send messages to.
   def logger
-    @params.fetch('logger') { Sqewer::NullLogger }
+    @params.fetch('logger') { Sqewer::NULL_LOGGER }
   end
 end

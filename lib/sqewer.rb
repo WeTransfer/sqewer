@@ -1,5 +1,9 @@
+require 'logger'
+
 # The enclosing module for the library
 module Sqewer
+  NULL_LOGGER = Logger.new(nil)
+
   # Eager-load everything except extensions. Sort to ensure
   # the files load in the same order on all platforms.
   Dir.glob(__dir__ + '/**/*.rb').sort.each do |path|

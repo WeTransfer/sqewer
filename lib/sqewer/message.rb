@@ -1,4 +1,5 @@
 require 'securerandom'
+
 # A wrapper for the most important properties of a message, be it a
 # message we received or a message we are about to send
 class Sqewer::Message
@@ -10,7 +11,7 @@ class Sqewer::Message
   attr_accessor :delay_seconds
 
   def initialize(**attributes)
-    @id = SecureRandom.uuid
+    @id = SecureRandom.uuid # Can be then overridden for a received message
     attributes.map do |(k,v)|
       public_send("#{k}=", v)
     end

@@ -15,11 +15,11 @@ class Sqewer::Submitter < Struct.new(:connection, :serializer)
     # Pass the actual delay value to the serializer, to be stored in executed_at
     messages = jobs.map do |job|
       body = serializer.serialize(job, Time.now.to_i + in_job_delay)
-      msg = Sqewer::Message.new(body: body, delay_seconds: sqs_delay)
+      Sqewer::Message.new(body: body, delay_seconds: sqs_delay)
     end
-    connection.send_messages([msg])
+    connection.send_messages(messages)
   end
-  
+
   private
 
   def split_delay(delay_possibly_higher_than_sqs_max)

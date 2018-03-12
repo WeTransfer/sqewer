@@ -119,9 +119,8 @@ describe Sqewer::Connection do
       }
       
       conn = described_class.new('https://fake-queue.com')
-      conn.delete_messages do | b |
-        102.times { b.delete_message(SecureRandom.uuid) }
-      end
+      fake_messages = (1..102).map { double(receipt_handle: SecureRandom.uuid, id: SecureRandom.uuid }
+      conn.delete_messages(fake_messages)
     end
     
     it 'raises an exception if any message fails sending' do

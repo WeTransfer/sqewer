@@ -53,7 +53,7 @@ class Sqewer::Serializer
   # @param job[#to_h] an object that supports `to_h`
   # @param execute_after_timestamp[#to_i, nil] the Unix timestamp after which the job may be executed
   # @return [String] serialized string ready to be put into the queue
-  def serialize(job, execute_after_timestamp = nil)
+  def serialize(job, execute_after_timestamp)
     job_class_name = job.class.to_s
 
     begin
@@ -63,9 +63,11 @@ class Sqewer::Serializer
     end
 
     job_params = job.respond_to?(:to_h) ? job.to_h : nil
-    job_ticket_hash = {_job_class: job_class_name, _job_params: job_params}
-    job_ticket_hash[:_execute_after] = execute_after_timestamp.to_i if execute_after_timestamp
-    
-    JSON.dump(job_ticket_hash)
+    job_ticket_hash = {
+      _job_class: job_class_name,
+      _job_params: job_params,
+      _execute_after: execute_after_timestamp.to_i,
+    }
+    JSON.pretty_generate(job_ticket_hash)
   end
 end

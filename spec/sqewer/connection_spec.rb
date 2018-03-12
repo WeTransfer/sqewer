@@ -97,10 +97,6 @@ describe Sqewer::Connection do
     
   end
   
-  describe '#delete_message' do
-    it 'deletes a single message'
-  end
-  
   describe '#delete_messages' do
     it 'deletes 100 messages' do
       fake_sqs_client = double('Client')
@@ -119,7 +115,7 @@ describe Sqewer::Connection do
       }
       
       conn = described_class.new('https://fake-queue.com')
-      fake_messages = (1..102).map { double(receipt_handle: SecureRandom.uuid, id: SecureRandom.uuid }
+      fake_messages = (1..102).map { double(receipt_handle: SecureRandom.uuid, id: SecureRandom.uuid) }
       conn.delete_messages(fake_messages)
     end
     

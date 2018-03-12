@@ -11,7 +11,7 @@ class Sqewer::Connection
   MAX_RANDOM_FAILURES_PER_CALL = 10
   MAX_RANDOM_RECEIVE_FAILURES = 100 # sure to hit the max_elapsed_time of 900 seconds
 
-  class AwsError < StandardError
+  class NotOurFaultAwsError < StandardError
   end
 
   # Returns the default adapter, connected to the queue set via the `SQS_QUEUE_URL`

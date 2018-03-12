@@ -19,16 +19,20 @@ describe Sqewer::Serializer do
       class JobWithoutToHash
       end
       job = JobWithoutToHash.new
-      expect(described_class.new.serialize(job)).to eq("{\"_job_class\":\"JobWithoutToHash\",\"_job_params\":null}")
+      serialized = subject.serialize(job)
+      roundtrip = JSON.parse(serialized)
+      expect(roundtrip['_job_class']).to eq('JobWithoutToHash')
+      expect(roundtrip['_job_params']).to be_nil
     end
     
     it 'serializes a Struct along with its members and the class name' do
       class SomeJob < Struct.new :one, :two
       end
-      
       job = SomeJob.new(123, [456])
-      
-      expect(described_class.new.serialize(job)).to eq("{\"_job_class\":\"SomeJob\",\"_job_params\":{\"one\":123,\"two\":[456]}}")
+      serialized = subject.serialize(job)
+      roundtrip = JSON.parse(serialized)
+      expect(roundtrip['_job_class']).to eq('SomeJob')
+      expect(roundtrip['_job_params']).to eq({"one"=>123, "two"=>[456]})
     end
     
     it 'adds _execute_after when the value is given' do

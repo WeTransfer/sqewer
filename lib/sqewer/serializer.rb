@@ -53,7 +53,7 @@ class Sqewer::Serializer
   # @param job[#to_h] an object that supports `to_h`
   # @param execute_after_timestamp[#to_i, nil] the Unix timestamp after which the job may be executed
   # @return [String] serialized string ready to be put into the queue
-  def serialize(job, execute_after_timestamp)
+  def serialize(job, execute_after_timestamp = 0)
     job_class_name = job.class.to_s
 
     begin

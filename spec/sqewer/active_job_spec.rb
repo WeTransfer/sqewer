@@ -74,10 +74,6 @@ end
 describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
   before :each do
-    # Rewire the queue to use SQLite
-    @previous_queue_url = ENV['SQS_QUEUE_URL']
-    ENV['SQS_QUEUE_URL'] = 'sqlite3:/%s/sqewer-temp.sqlite3' % Dir.pwd
-
     ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter
 
     test_seed_name = SecureRandom.hex(4)
@@ -94,13 +90,15 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
       end
     end
 
+    ActiveRecord::Base.connection.execute('PRAGMA journal_mode=WAL')
+
     @worker = Sqewer::Worker.default
     @worker.start
   end
 
   after :each do
-    ENV['SQS_QUEUE_URL'] = @previous_queue_url
     @worker.stop
+    wait_for { @worker.state }.to be_in_state(:stopped)
 
     # Ensure database files get killed afterwards
     File.unlink(ActiveRecord::Base.connection_config[:database]) rescue nil
@@ -111,7 +109,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
     tmpdir = Dir.mktmpdir
     CreateFileJob.perform_later(tmpdir + '/immediate')
-    CreateFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
+    CreateFileJob.set(wait: 5.seconds).perform_later(tmpdir + '/delayed')
 
     wait_for { File.exist?(tmpdir + '/immediate') }.to eq(true)
 
@@ -123,7 +121,7 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
     wait_for { File.exist?(tmpdir + '/immediate') }.to eq(false)
 
     DeleteFileJob.set(wait: 2.seconds).perform_later(tmpdir + '/delayed')
-    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)    
+    wait_for { File.exist?(tmpdir + '/delayed') }.to eq(false)
   end
 
   it "switches the attribute on the given User" do
@@ -191,6 +189,10 @@ describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
   it 'reports the name of the job, not the name of the Performable' do
     job = ActiveJob::QueueAdapters::SqewerAdapter::Performable.from_active_job(CreatefileWithOptionsArgument.new)
-    expect(job.class_name).to eq("CreatefileWithOptionsArgument")
+    # mimic sending the job across the network
+    serialized_job = Sqewer::Serializer.default.serialize(job)
+    rematerialized_job = Sqewer::Serializer.default.unserialize(serialized_job)
+
+    expect(rematerialized_job.class_name).to eq("CreatefileWithOptionsArgument")
   end
 end

@@ -1,3 +1,6 @@
+### 6.0.2
+- Fix an issue in the interaction in the Activejob extension that caused all the background jobs to show up as instances of `#run`.
+
 ### 6.0.1
 - Fix an issue in the interaction between the Appsignal and Activejob extensions that caused all the background jobs to show up as instances of `ActiveJob::QueueAdapters::SqewerAdapter::Performable#run`.
 

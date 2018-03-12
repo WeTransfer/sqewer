@@ -42,7 +42,7 @@ module ActiveJob
         end
 
         def class_name
-          @job["job_class"]
+          @job[:job_class]
         end
 
         # Runs the contained ActiveJob.

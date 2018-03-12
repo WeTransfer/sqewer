@@ -66,6 +66,7 @@ class Sqewer::Connection
 
   # Deletes multiple messages after they all have been succesfully decoded and processed.
   #
+  # @param messages[Array<Sqewer::Message>] the messages to delete. Must respond to #receipt_handle and #id
   # @return [void]
   def delete_messages(messages)
     in_batches_of(messages, BATCH_SIZE) do |batch|

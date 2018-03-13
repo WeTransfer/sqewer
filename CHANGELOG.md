@@ -1,3 +1,6 @@
+### 6.0.3
+- It is now no longer required to have ActiveJob loaded when integrating with Appsignal.
+
 ### 6.0.2
 - Fix an issue in the interaction in the Activejob extension that caused all the background jobs to show up as instances of `#run`.
 

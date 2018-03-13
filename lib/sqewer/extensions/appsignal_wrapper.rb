@@ -59,7 +59,7 @@ module Sqewer
       end
 
       def set_transaction_details_from_job(transaction, job)
-        job_class_string = job.is_a?(ActiveJob::QueueAdapters::SqewerAdapter::Performable) ? job.class_name : job.class.to_s
+        job_class_string = job.respond_to?(:class_name) ? job.class_name : job.class.to_s
         transaction.set_action('%s#%s' % [job_class_string, 'run'])
         job_params = job.respond_to?(:to_h) ? job.to_h : {}
         transaction.request.params = job_params

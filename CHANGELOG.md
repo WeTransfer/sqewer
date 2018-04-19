@@ -1,3 +1,6 @@
+### 6.0.4
+- If running on an AWS EC2 instance and retrieving AWS credentials from the instance metadata, Sqewer will now retry up to five times if the instance metadata are not available. This fixes intermittent `Aws::Errors::MissingCredentialsError` exceptions.
+
 ### 6.0.3
 - It is now no longer required to have ActiveJob loaded when integrating with Appsignal.
 

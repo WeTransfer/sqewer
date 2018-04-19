@@ -151,6 +151,9 @@ class Sqewer::Connection
   end
 
   def client
-    @client ||= Aws::SQS::Client.new
+    @client ||= Aws::SQS::Client.new(
+      instance_profile_credentials_timeout: 1, # defaults to 1 second
+      instance_profile_credentials_retries: 5, # defaults to 0 retries
+    )
   end
 end

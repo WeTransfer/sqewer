@@ -20,7 +20,8 @@ describe Sqewer::SimpleJob do
     
     job = example_class.new(foo: 1, bar: 2)
     expect(job.inspect).to include('Class')
-    expect(job.inspect).to include('{:foo=>1, :bar=>2}')
+    expect(job.inspect).to include(':foo=>1')
+    expect(job.inspect).to include(':bar=>2')
   end
   
   it 'uses inspectable_attributes to limit the scope of .inspect' do

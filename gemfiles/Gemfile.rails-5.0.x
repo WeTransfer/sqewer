@@ -6,7 +6,6 @@ gem 'activerecord', "~> 5"
 group :development do
   gem 'rake', '~> 10.0'
   gem 'sqlite3'
-  gem "rspec", "~> 2.4"
-  gem "rdoc", "~> 3.12"
-  gem "bundler", "~> 1.0"
+  gem "rspec", "~> 3"
+  gem "bundler"
 end

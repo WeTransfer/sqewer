@@ -1,3 +1,7 @@
+### 6.0.6
+- Make sure :sqewer ActiveJob adapter parameter works in both Rails 4
+  and Rails 5.
+
 ### 6.0.5
 - Limit ActiveJob compatibility to 4.2 and later, and add Travis test
   setup for multiple Ruby versions and Rails versions up to and including 5.1

@@ -74,7 +74,7 @@ end
 describe ActiveJob::QueueAdapters::SqewerAdapter, :sqs => true do
 
   before :each do
-    ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter
+    ActiveJob::Base.queue_adapter = ActiveJob::QueueAdapters::SqewerAdapter.new
 
     test_seed_name = SecureRandom.hex(4)
     ActiveRecord::Base.establish_connection(adapter: 'sqlite3', database: '%s/workdb.sqlite3' % Dir.pwd)

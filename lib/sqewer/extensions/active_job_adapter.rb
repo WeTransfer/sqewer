@@ -16,22 +16,6 @@ module ActiveJob
     #    Rails.application.config.active_job.queue_adapter = :sqewer
     class SqewerAdapter
 
-      module EnqueueMethods
-        def enqueue(active_job) #:nodoc:
-          wrapped_job = Performable.from_active_job(active_job)
-
-          Sqewer.submit!(wrapped_job)
-        end
-
-        def enqueue_at(active_job, timestamp) #:nodoc:
-          wrapped_job = Performable.from_active_job(active_job)
-
-          delta_t = (timestamp - Time.now.to_i).to_i
-
-          Sqewer.submit!(wrapped_job, delay_seconds: delta_t)
-        end
-      end
-
       # Works as a Job for sqewer, and wraps an ActiveJob Worker which responds to perform()
       class Performable
 
@@ -85,12 +69,18 @@ module ActiveJob
         
       end
 
-      # In Rails 5 the enqueue methods are defined on the instance
-      # of the adapter. Below - on the class of the adapter.
-      if ActiveJob::VERSION::MAJOR < 5
-        extend EnqueueMethods
-      else
-        include EnqueueMethods
+      def enqueue(active_job) #:nodoc:
+        wrapped_job = Performable.from_active_job(active_job)
+
+        Sqewer.submit!(wrapped_job)
+      end
+
+      def enqueue_at(active_job, timestamp) #:nodoc:
+        wrapped_job = Performable.from_active_job(active_job)
+
+        delta_t = (timestamp - Time.now.to_i).to_i
+
+        Sqewer.submit!(wrapped_job, delay_seconds: delta_t)
       end
     end
   end

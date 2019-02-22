@@ -8,12 +8,14 @@ module ActiveJob
       prepend PerformWithKeywords
     end
   end
+
   module QueueAdapters
     # Handle Rails ActiveJob through sqewer.
     # Set it up like so:
     #
     #    Rails.application.config.active_job.queue_adapter = :sqewer
     class SqewerAdapter
+
       # Works as a Job for sqewer, and wraps an ActiveJob Worker which responds to perform()
       class Performable
 
@@ -67,20 +69,18 @@ module ActiveJob
         
       end
 
-      class << self
-        def enqueue(active_job) #:nodoc:
-          wrapped_job = Performable.from_active_job(active_job)
+      def enqueue(active_job) #:nodoc:
+        wrapped_job = Performable.from_active_job(active_job)
 
-          Sqewer.submit!(wrapped_job)
-        end
+        Sqewer.submit!(wrapped_job)
+      end
 
-        def enqueue_at(active_job, timestamp) #:nodoc:
-          wrapped_job = Performable.from_active_job(active_job)
+      def enqueue_at(active_job, timestamp) #:nodoc:
+        wrapped_job = Performable.from_active_job(active_job)
 
-          delta_t = (timestamp - Time.now.to_i).to_i
+        delta_t = (timestamp - Time.now.to_i).to_i
 
-          Sqewer.submit!(wrapped_job, delay_seconds: delta_t)
-        end
+        Sqewer.submit!(wrapped_job, delay_seconds: delta_t)
       end
     end
   end

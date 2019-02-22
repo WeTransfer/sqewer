@@ -38,8 +38,12 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake", "~> 12.3"
   spec.add_development_dependency "rspec", "~> 3.0"
+  
+  # The Rails deps can be relaxed, they are specified more exactly in the gemfiles/
+  # for testing against a specific Rails version
   spec.add_development_dependency "activerecord", ">= 4.2"
   spec.add_development_dependency "activejob", ">= 4.2"
+
   spec.add_development_dependency "rspec-wait"
   spec.add_development_dependency "sqlite3"
   spec.add_development_dependency "dotenv"

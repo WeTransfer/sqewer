@@ -1,10 +1,11 @@
+gemfile:
+  - gemfiles/Gemfile.rails-4.1.x
+  - gemfiles/Gemfile.rails-5.0.x
 rvm:
-- 2.2.2
-- 2.3.3
-- 2.4.1
-- 2.5.1
-sudo: false
+  - 2.4.5
+  - 2.5.1
 cache: bundler
+sudo: false
 env:
   global:
   - AWS_REGION=eu-central-1

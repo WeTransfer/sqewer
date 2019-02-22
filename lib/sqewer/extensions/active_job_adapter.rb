@@ -87,7 +87,7 @@ module ActiveJob
 
       # In Rails 5 the enqueue methods are defined on the instance
       # of the adapter. Below - on the class of the adapter.
-      if ActiveJob::VERSION::MAJOR <= 5
+      if ActiveJob::VERSION::MAJOR < 5
         extend EnqueueMethods
       else
         include EnqueueMethods

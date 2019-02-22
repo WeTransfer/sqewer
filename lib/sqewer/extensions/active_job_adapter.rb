@@ -69,18 +69,34 @@ module ActiveJob
         
       end
 
-      def enqueue(active_job) #:nodoc:
+      def self.enqueue(active_job) #:nodoc:
         wrapped_job = Performable.from_active_job(active_job)
 
         Sqewer.submit!(wrapped_job)
       end
 
-      def enqueue_at(active_job, timestamp) #:nodoc:
+      def self.enqueue_at(active_job, timestamp) #:nodoc:
         wrapped_job = Performable.from_active_job(active_job)
 
         delta_t = (timestamp - Time.now.to_i).to_i
 
         Sqewer.submit!(wrapped_job, delay_seconds: delta_t)
+      end
+
+      # ActiveJob in Rails 4 resolves the symbol value you give it
+      # and then tries to call enqueue_* methods directly on what
+      # got resolved. In Rails 5, first Rails will call .new on
+      # what it resolved from the symbol and _then_ call enqueue
+      # and enqueue_at on that what has gotten resolved. This means
+      # that we have to expose these methods _both_ as class methods
+      # and as instance methods.
+      # This can be removed when we stop supporting Rails 4.
+      def enqueue_at(*args)
+        self.class.enqueue_at(*args)
+      end
+      
+      def enqueue(*args)
+        self.class.enqueue(*args)
       end
     end
   end

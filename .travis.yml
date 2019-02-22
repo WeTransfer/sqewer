@@ -1,5 +1,5 @@
 gemfile:
-  - gemfiles/Gemfile.rails-4.1.x
+  - gemfiles/Gemfile.rails-4.2.x
   - gemfiles/Gemfile.rails-5.0.x
   - gemfiles/Gemfile.rails-5.1.x
 rvm:
@@ -18,4 +18,4 @@ matrix:
   - rvm: 2.3.7
     gemfile: gemfiles/Gemfile.rails-5.1.x
   - rvm: 2.5.1
-    gemfile: gemfiles/Gemfile.rails-4.1.x
+    gemfile: gemfiles/Gemfile.rails-4.2.x

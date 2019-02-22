@@ -4,3 +4,4 @@ source "http://rubygems.org"
 gemspec path: __dir__ + '/..'
 
 gem 'activejob', "~> 5"
+gem 'activerecord', "~> 5"

@@ -1,3 +1,7 @@
+### 6.0.5
+- Limit ActiveJob compatibility to 4.2 and later, and add Travis test
+  setup for multiple Ruby versions and Rails versions up to and including 5.1
+
 ### 6.0.4
 - If running on an AWS EC2 instance and retrieving AWS credentials from the instance metadata, Sqewer will now retry up to five times if the instance metadata are not available. This fixes intermittent `Aws::Errors::MissingCredentialsError` exceptions.
 

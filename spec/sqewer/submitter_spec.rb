@@ -21,9 +21,11 @@ describe Sqewer::Submitter do
       
       fake_connection = double('Some SQS connection')
       expect(fake_connection).to receive(:send_message).at_least(5).times.with('serialized-object-data', {})
+
+      fake_job = double('Some job', run: true)
       
       subject = described_class.new(fake_connection, fake_serializer)
-      5.times { subject.submit!(:some_object) }
+      5.times { subject.submit!(fake_job) }
     end
     
     it 'passes the keyword arguments to send_message on the connection' do
@@ -35,9 +37,11 @@ describe Sqewer::Submitter do
       
       fake_connection = double('Some SQS connection')
       expect(fake_connection).to receive(:send_message).with('serialized-object-data', {delay_seconds: 5})
+
+      fake_job = double('Some job', run: true)
       
       subject = described_class.new(fake_connection, fake_serializer)
-      subject.submit!(:some_object, delay_seconds: 5)
+      subject.submit!(fake_job, delay_seconds: 5)
     end
     
     it 'handles the massively delayed execution by clamping the delay_seconds to the SQS maximum, and saving the _execute_after' do
@@ -53,9 +57,22 @@ describe Sqewer::Submitter do
       
       fake_connection = double('Some SQS connection')
       expect(fake_connection).to receive(:send_message).with('serialized-object-data', {delay_seconds: 899})
+
+      fake_job = double('Some job', run: true)
       
       subject = described_class.new(fake_connection, fake_serializer)
-      subject.submit!(:some_object, delay_seconds: 4585659855)
+      subject.submit!(fake_job, delay_seconds: 4585659855)
+    end
+
+    it "raises an error if the job does not respond to call" do
+      fake_serializer = double('Some serializer')
+      fake_connection = double('Some SQS connection')
+      fake_job = double('Some job')
+      
+      subject = described_class.new(fake_connection, fake_serializer)
+      expect {
+        subject.submit!(fake_job, delay_seconds: 5)
+      }.to raise_error(Sqewer::Submitter::NotSqewerJob)
     end
   end
 end

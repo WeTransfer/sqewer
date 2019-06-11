@@ -3,6 +3,7 @@
 # and the serializer (something that responds to `#serialize`) to
 # convert the job into the string that will be put in the queue.
 class Sqewer::Submitter < Struct.new(:connection, :serializer)
+  NotSqewerJob = Class.new(StandardError)
 
   # Returns a default Submitter, configured with the default connection
   # and the default serializer.
@@ -11,6 +12,7 @@ class Sqewer::Submitter < Struct.new(:connection, :serializer)
   end
 
   def submit!(job, **kwargs_for_send)
+    raise NotSqewerJob.new("Submitted object is not a valid job: #{job.inspect}") unless job.respond_to?(:run)
     message_body = if delay_by_seconds = kwargs_for_send[:delay_seconds]
       clamped_delay = clamp_delay(delay_by_seconds)
       kwargs_for_send[:delay_seconds] = clamped_delay

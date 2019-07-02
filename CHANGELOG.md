@@ -1,3 +1,8 @@
+### 6.1.0
+- Pass SQS message attributes through the middleware chain
+- Recover the SentTimestamp attribute and set it as queue start in Appsignal
+- Make sure a job given to `submit!` responds to `run`
+
 ### 6.0.6
 - Make sure :sqewer ActiveJob adapter parameter works in both Rails 4
   and Rails 5.

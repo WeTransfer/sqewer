@@ -164,7 +164,7 @@ describe Sqewer::Connection do
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
       
       fake_messages = (1..5).map {
-        double(receipt_handle: SecureRandom.hex(4), body: SecureRandom.random_bytes(128))
+        double(receipt_handle: SecureRandom.hex(4), body: SecureRandom.random_bytes(128), attributes: { 'attr' => 'val' })
       }
       fake_response = double(messages: fake_messages)
       

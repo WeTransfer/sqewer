@@ -14,7 +14,7 @@ class Sqewer::Connection
   NotOurFaultAwsError = Class.new(StandardError)
 
   # A wrapper for most important properties of the received message
-  class Message < Struct.new(:receipt_handle, :body)
+  class Message < Struct.new(:receipt_handle, :body, :attributes)
     def inspect
       body.inspect
     end
@@ -57,7 +57,7 @@ class Sqewer::Connection
     Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_RECEIVE_FAILURES do
       response = client.receive_message(queue_url: @queue_url,
         wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: BATCH_RECEIVE_SIZE)
-      response.messages.map {|message| Message.new(message.receipt_handle, message.body) }
+      response.messages.map {|message| Message.new(message.receipt_handle, message.body, message.attributes) }
     end
   end
 

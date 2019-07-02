@@ -33,12 +33,12 @@ class Sqewer::MiddlewareStack
     }.call
   end
 
-  def around_deserialization(serializer, message_id, message_body, &inner_block)
+  def around_deserialization(serializer, message_id, message_body, message_attributes, &inner_block)
     return yield if @handlers.empty?
 
     responders = @handlers.select{|e| e.respond_to?(:around_deserialization) }
     responders.reverse.inject(inner_block) {|outer_block, middleware_object|
-      ->{ middleware_object.public_send(:around_deserialization, serializer, message_id, message_body, &outer_block) }
+      ->{ middleware_object.public_send(:around_deserialization, serializer, message_id, message_body, message_attributes, &outer_block) }
     }.call
   end
 end

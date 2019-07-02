@@ -22,7 +22,7 @@ module Sqewer
         def env; {params: self.params}; end
       end
 
-      def around_deserialization(serializer, msg_id, msg_payload)
+      def around_deserialization(serializer, msg_id, msg_payload, msg_attributes)
         return yield unless Appsignal.active?
 
         # This creates a transaction, but also sets it as the Appsignal.current_transaction
@@ -35,7 +35,9 @@ module Sqewer
 
         transaction.set_action('%s#%s' % [serializer.class, 'unserialize'])
         transaction.request.params = {:sqs_message_body => msg_payload.to_s}
-        transaction.set_http_or_background_queue_start
+        if msg_attributes.key?('SentTimestamp')
+          transaction.set_queue_start = Time.at(msg_attributes['SentTimestamp'].to_i / 1000.0)
+        end
 
         job_unserialized = yield
 

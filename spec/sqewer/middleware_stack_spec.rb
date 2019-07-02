@@ -9,7 +9,7 @@ describe Sqewer::MiddlewareStack do
   describe '#around_deserialization' do
     it 'works without any handlers added' do
       stack = described_class.new
-      prepare_result = stack.around_deserialization(nil, 'msg-123', '{"body":"some text"}') { :prepared }
+      prepare_result = stack.around_deserialization(nil, 'msg-123', '{"body":"some text"}', { 'attr' => 'val' }) { :prepared }
       expect(prepare_result).to eq(:prepared)
     end
     
@@ -26,14 +26,14 @@ describe Sqewer::MiddlewareStack do
       stack << double('Object that does not handle around_deserialization')
       stack << handler
       stack << handler
-      result = stack.around_deserialization(nil, 'msg-123', '{"body":"some text"}') { :foo }
+      result = stack.around_deserialization(nil, 'msg-123', '{"body":"some text"}', { 'attr' => 'val' }) { :foo }
       expect(result).to eq(:foo)
       expect(called).not_to be_empty
       
       expect(called).to eq([
-          [nil, "msg-123", "{\"body\":\"some text\"}"],
-          [nil, "msg-123", "{\"body\":\"some text\"}"],
-          [nil, "msg-123", "{\"body\":\"some text\"}"]]
+          [nil, "msg-123", "{\"body\":\"some text\"}", { 'attr' => 'val' }],
+          [nil, "msg-123", "{\"body\":\"some text\"}", { 'attr' => 'val' }],
+          [nil, "msg-123", "{\"body\":\"some text\"}", { 'attr' => 'val' }]]
       )
     end
   end

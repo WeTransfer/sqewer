@@ -204,7 +204,7 @@ class Sqewer::Worker
     box = Sqewer::ConnectionMessagebox.new(connection)
     return box.delete_message(message.receipt_handle) unless message.has_body?
 
-    job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body) do
+    job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body, message.attributes) do
       serializer.unserialize(message.body)
     end
     return unless job
@@ -243,7 +243,7 @@ class Sqewer::Worker
     # thread-safe - or at least not it's HTTP client part).
     box = Sqewer::ConnectionMessagebox.new(connection)
 
-    job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body) do
+    job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body, message.attributes) do
       serializer.unserialize(message.body)
     end
     return unless job

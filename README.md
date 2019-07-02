@@ -248,8 +248,8 @@ You can wrap job processing in middleware. A full-featured middleware class look
 
     class MyWrapper
       # Surrounds the job instantiation from the string coming from SQS.
-      def around_deserialization(serializer, msg_id, msg_payload)
-        # msg_id is the receipt handle, msg_payload is the message body string
+      def around_deserialization(serializer, msg_id, msg_payload, msg_attributes)
+        # msg_id is the receipt handle, msg_payload is the message body string, msg_attributes are the message's attributes
         yield
       end
       

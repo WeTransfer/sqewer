@@ -38,10 +38,12 @@ class Sqewer::LocalConnection < Sqewer::Connection
     raise e, "You need the sqlite3 gem in your Gemfile to use LocalConnection. Add it to your Gemfile (`gem 'sqlite3'')"
   end
 
-  # @return [Array<Message>] an array of Message objects 
+  # @return [Array<Message>] an array of Message objects
   def receive_messages
-    messages = load_receipt_handles_and_bodies
-    messages.map {|message| Message.new(message[0], message[1]) }
+    blank_message_attributes = {}
+    load_receipt_handles_and_bodies.map do |(receipt_handle, message_body)|
+      Message.new(receipt_handle, message_body, blank_message_attributes)
+    end
   end
 
   # @yield [#send_message] the object you can send messages through (will be flushed at method return)
@@ -105,7 +107,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
       db.execute("BEGIN")
       # Make messages visible that have to be redelivered
       db.execute("UPDATE sqewer_messages_v2
-        SET visible = 't' 
+        SET visible = 't'
         WHERE queue_name = ? AND visible = 'f' AND last_delivery_at_epoch < ?", @queue_name.to_s, t - 60)
       # Remove hopeless messages
       db.execute("DELETE FROM sqewer_messages_v2
@@ -118,7 +120,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
         WHERE queue_name = ? AND visible = 't' AND deliver_after_epoch <= ? AND last_delivery_at_epoch <= ?",
         @queue_name.to_s, t, t)
     end
-    
+
     with_db do |db|
       db.execute("BEGIN")
       rows.map do |(id, *_)|

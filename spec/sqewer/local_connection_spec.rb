@@ -25,13 +25,24 @@ describe Sqewer::LocalConnection do
     end
   end
 
+  it 'provides the attributes hash on the Message' do
+    conn = described_class.new(temp_db_uri)
+    conn.truncate!
+    conn.send_multiple_messages do | b |
+      b.send_message("Hello - #{SecureRandom.uuid}")
+    end
+
+    readback_message = conn.receive_messages.first
+    expect(readback_message.attributes).to be_kind_of(Hash)
+  end
+
   it 'handles a full send/receive/delete cycle' do
     conn = described_class.new(temp_db_uri)
     conn.truncate!
     conn.send_multiple_messages do | b |
       4.times { b.send_message("Hello - #{SecureRandom.uuid}") }
     end
-    
+
     messages = conn.receive_messages
     expect(messages.length).to eq(4)
 

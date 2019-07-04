@@ -20,8 +20,8 @@ describe Sqewer::LocalConnection do
       conn.send_message("Hello!")
 
       db = SQLite3::Database.open(tempdir_path + '/test.sqlite3')
-      expect(db.get_first_value('SELECT COUNT(id) FROM sqewer_messages_v2')).to eq(1)
-      expect(db.get_first_value('SELECT queue_name FROM sqewer_messages_v2')).to eq('foobarbaz')
+      expect(db.get_first_value('SELECT COUNT(id) FROM sqewer_messages_v3')).to eq(1)
+      expect(db.get_first_value('SELECT queue_name FROM sqewer_messages_v3')).to eq('foobarbaz')
     end
   end
 
@@ -34,6 +34,7 @@ describe Sqewer::LocalConnection do
 
     readback_message = conn.receive_messages.first
     expect(readback_message.attributes).to be_kind_of(Hash)
+    expect(readback_message.attributes['SentTimestamp']).to be_kind_of(Integer)
   end
 
   it 'handles a full send/receive/delete cycle' do

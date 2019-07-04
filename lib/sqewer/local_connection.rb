@@ -21,7 +21,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
     require 'sqlite3'
     @db_path, @queue_name = self.class.parse_queue_url(queue_url_with_sqlite3_scheme)
     with_db do |db|
-      db.execute("CREATE TABLE IF NOT EXISTS sqewer_messages_v2 (
+      db.execute("CREATE TABLE IF NOT EXISTS sqewer_messages_v3 (
         id INTEGER PRIMARY KEY AUTOINCREMENT ,
         queue_name VARCHAR NOT NULL,
         receipt_handle VARCHAR NOT NULL,
@@ -29,10 +29,11 @@ class Sqewer::LocalConnection < Sqewer::Connection
         times_delivered_so_far INTEGER DEFAULT 0,
         last_delivery_at_epoch INTEGER,
         visible BOOLEAN DEFAULT 't',
+        sent_timestamp_millis INTEGER,
         message_body TEXT)"
       )
-      db.execute("CREATE INDEX IF NOT EXISTS on_receipt_handle ON sqewer_messages_v2 (receipt_handle)")
-      db.execute("CREATE INDEX IF NOT EXISTS on_queue_name ON sqewer_messages_v2 (queue_name)")
+      db.execute("CREATE INDEX IF NOT EXISTS on_receipt_handle ON sqewer_messages_v3 (receipt_handle)")
+      db.execute("CREATE INDEX IF NOT EXISTS on_queue_name ON sqewer_messages_v3 (queue_name)")
     end
   rescue LoadError => e
     raise e, "You need the sqlite3 gem in your Gemfile to use LocalConnection. Add it to your Gemfile (`gem 'sqlite3'')"
@@ -40,9 +41,8 @@ class Sqewer::LocalConnection < Sqewer::Connection
 
   # @return [Array<Message>] an array of Message objects
   def receive_messages
-    blank_message_attributes = {}
-    load_receipt_handles_and_bodies.map do |(receipt_handle, message_body)|
-      Message.new(receipt_handle, message_body, blank_message_attributes)
+    load_receipt_handles_bodies_and_timestamps.map do |(receipt_handle, message_body, sent_timestamp_millis)|
+      Message.new(receipt_handle, message_body, {'SentTimestamp' => sent_timestamp_millis})
     end
   end
 
@@ -68,7 +68,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
   # Only gets used in tests
   def truncate!
     with_db do |db|
-      db.execute("DELETE FROM sqewer_messages_v2 WHERE queue_name = ?", @queue_name)
+      db.execute("DELETE FROM sqewer_messages_v3 WHERE queue_name = ?", @queue_name)
     end
   end
 
@@ -93,30 +93,31 @@ class Sqewer::LocalConnection < Sqewer::Connection
     with_db do |db|
       db.execute("BEGIN")
       ids_to_delete.each do |id|
-        db.execute("DELETE FROM sqewer_messages_v2 WHERE receipt_handle = ?", id)
+        db.execute("DELETE FROM sqewer_messages_v3 WHERE receipt_handle = ?", id)
       end
       db.execute("COMMIT")
     end
   end
 
-  def load_receipt_handles_and_bodies
+  def load_receipt_handles_bodies_and_timestamps
     t = Time.now.to_i
 
     # First make messages that were previously marked invisible but not deleted visible again
     with_db do |db|
       db.execute("BEGIN")
       # Make messages visible that have to be redelivered
-      db.execute("UPDATE sqewer_messages_v2
+      db.execute("UPDATE sqewer_messages_v3
         SET visible = 't'
         WHERE queue_name = ? AND visible = 'f' AND last_delivery_at_epoch < ?", @queue_name.to_s, t - 60)
       # Remove hopeless messages
-      db.execute("DELETE FROM sqewer_messages_v2
+      db.execute("DELETE FROM sqewer_messages_v3
         WHERE queue_name = ? AND times_delivered_so_far >= ?", @queue_name.to_s, ASSUME_DEADLETTER_AFTER_N_DELIVERIES)
       db.execute("COMMIT")
     end
 
+    # Then select messages to receive
     rows = with_readonly_db do |db|
-      db.execute("SELECT id, receipt_handle, message_body FROM sqewer_messages_v2
+      db.execute("SELECT id, receipt_handle, message_body, sent_timestamp_millis FROM sqewer_messages_v3
         WHERE queue_name = ? AND visible = 't' AND deliver_after_epoch <= ? AND last_delivery_at_epoch <= ?",
         @queue_name.to_s, t, t)
     end
@@ -124,20 +125,21 @@ class Sqewer::LocalConnection < Sqewer::Connection
     with_db do |db|
       db.execute("BEGIN")
       rows.map do |(id, *_)|
-        db.execute("UPDATE sqewer_messages_v2
+        db.execute("UPDATE sqewer_messages_v3
           SET visible = 'f', times_delivered_so_far = times_delivered_so_far + 1, last_delivery_at_epoch = ?
           WHERE id = ?", t, id)
       end
       db.execute("COMMIT")
     end
 
-    rows.map do |(_, *receipt_handle_and_body)|
-      receipt_handle_and_body
+    rows.map do |(_db_id, receipt_handle, body, timestamp)|
+      [receipt_handle, body, timestamp]
     end
   end
 
   def persist_messages(messages)
     epoch = Time.now.to_i
+    sent_timestamp_millis = (Time.now.to_f * 1000).to_i
     bodies_and_deliver_afters = messages.map do |msg|
       [msg.fetch(:message_body), epoch + msg.fetch(:delay_seconds, 0)]
     end
@@ -145,10 +147,10 @@ class Sqewer::LocalConnection < Sqewer::Connection
     with_db do |db|
       db.execute("BEGIN")
       bodies_and_deliver_afters.map do |body, deliver_after_epoch|
-        db.execute("INSERT INTO sqewer_messages_v2
-          (queue_name, receipt_handle, message_body, deliver_after_epoch, last_delivery_at_epoch)
-          VALUES(?, ?, ?, ?, ?)",
-          @queue_name.to_s, SecureRandom.uuid, body, deliver_after_epoch, epoch)
+        db.execute("INSERT INTO sqewer_messages_v3
+          (queue_name, receipt_handle, message_body, deliver_after_epoch, last_delivery_at_epoch, sent_timestamp_millis)
+          VALUES(?, ?, ?, ?, ?, ?)",
+          @queue_name.to_s, SecureRandom.uuid, body, deliver_after_epoch, epoch, sent_timestamp_millis)
       end
       db.execute("COMMIT")
     end

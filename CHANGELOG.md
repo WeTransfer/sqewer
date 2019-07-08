@@ -1,3 +1,6 @@
+### 6.2.0
+- Store SentTimestamp in SQLite and restore it on execution
+
 ### 6.1.0
 - Pass SQS message attributes through the middleware chain
 - Recover the SentTimestamp attribute and set it as queue start in Appsignal

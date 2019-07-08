@@ -4,7 +4,7 @@ module Sqewer
     # to Appsignal and to monitor performance. Will only activate
     # if the Appsignal gem is loaded within the current process and active.
     class AppsignalWrapper
-      
+
       def self.new
         if defined?(Appsignal)
           super
@@ -15,7 +15,7 @@ module Sqewer
 
       # extend Appsignal::Hooks::Helpers
       # and use format_args(args) on the jobargs?
-      
+
       # Acts as a replacement for Appsignal::GenericRequest
       class FakeRequest < Struct.new(:params)
         def initialize; super({}); end

@@ -36,7 +36,7 @@ module Sqewer
         transaction.set_action('%s#%s' % [serializer.class, 'unserialize'])
         transaction.request.params = {:sqs_message_body => msg_payload.to_s}
         if msg_attributes.key?('SentTimestamp')
-          transaction.set_queue_start = Time.at(msg_attributes['SentTimestamp'].to_i / 1000.0)
+          transaction.set_queue_start = msg_attributes['SentTimestamp'].to_i
         end
 
         job_unserialized = yield

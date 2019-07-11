@@ -1,3 +1,6 @@
+### 6.2.1
+- Appsignal queue start time should be set as an Integer of milliseconds, not as a Time object
+
 ### 6.2.0
 - Store SentTimestamp in SQLite and restore it on execution
 

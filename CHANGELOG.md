@@ -1,3 +1,7 @@
+### 6.2.2
+- Test the Appsignal integration using actual Appsignal libraries
+- In the Appsignal integration, replace a call of `set_queue_start=` with `set_queue_start`
+
 ### 6.2.1
 - Appsignal queue start time should be set as an Integer of milliseconds, not as a Time object
 

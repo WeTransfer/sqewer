@@ -20,7 +20,7 @@ describe Sqewer::Submitter do
       }
       
       fake_connection = double('Some SQS connection')
-      expect(fake_connection).to receive(:send_message).at_least(5).times.with('serialized-object-data', {})
+      expect(fake_connection).to receive(:send_message).at_least(5).times.with('serialized-object-data', any_args)
 
       fake_job = double('Some job', run: true)
       

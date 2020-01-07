@@ -8,7 +8,7 @@ describe Sqewer do
     first_job = double('Job1')
     second_job = double('Job2')
     
-    expect(fake_submitter).to receive(:submit!).with(first_job, second_job, {})
+    expect(fake_submitter).to receive(:submit!).with(first_job, second_job, any_args)
     Sqewer.submit!(first_job, second_job)
   end
 end

@@ -6,6 +6,8 @@ rvm:
   - 2.3.7
   - 2.4.5
   - 2.5.1
+  - 2.6.5
+  - 2.7.0
 cache: bundler
 sudo: false
 env:
@@ -18,4 +20,8 @@ matrix:
   - rvm: 2.3.7
     gemfile: gemfiles/Gemfile.rails-5.1.x
   - rvm: 2.5.1
+    gemfile: gemfiles/Gemfile.rails-4.2.x
+  - rvm: 2.6.5
+    gemfile: gemfiles/Gemfile.rails-4.2.x
+  - rvm: 2.7.0
     gemfile: gemfiles/Gemfile.rails-4.2.x

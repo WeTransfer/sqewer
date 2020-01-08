@@ -3,8 +3,8 @@ require_relative '../spec_helper'
 describe Sqewer::ExecutionContext do
   it 'offers a submit! that goes through the given Submitter argument' do
     fake_submitter = double('Submitter')
-    expect(fake_submitter).to receive(:submit!).with(:fake_job, {})
     
+    expect(fake_submitter).to receive(:submit!).with(:fake_job, any_args)
     subject = described_class.new(fake_submitter)
     subject.submit!(:fake_job)
   end

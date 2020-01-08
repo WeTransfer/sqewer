@@ -1,3 +1,6 @@
+### 6.3.0
+- Add support for Ruby 2.7
+
 ### 6.2.2
 - Test the Appsignal integration using actual Appsignal libraries
 - In the Appsignal integration, replace a call of `set_queue_start=` with `set_queue_start`

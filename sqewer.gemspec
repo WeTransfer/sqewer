@@ -6,8 +6,8 @@ require "sqewer/version"
 Gem::Specification.new do |spec|
   spec.name          = "sqewer"
   spec.version       = Sqewer::VERSION
-  spec.authors       = ["Julik Tarkhanov"]
-  spec.email         = ["me@julik.nl"]
+  spec.authors       = ["Julik Tarkhanov", "Andrei Horak"]
+  spec.email         = ["me@julik.nl", "linkyndy@gmail.com"]
 
   spec.summary       = %q{Process jobs from SQS}
   spec.description   = %q{A full-featured library for all them SQS worker needs}

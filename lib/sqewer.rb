@@ -1,3 +1,5 @@
+require 'connection_pool'
+
 # The enclosing module for the library
 module Sqewer
   # Eager-load everything except extensions. Sort to ensure
@@ -24,6 +26,12 @@ module Sqewer
     Sqewer::Submitter.default.submit!(*jobs, **options)
   end
   
+  def self.connection_pool
+    @connection_pool ||= ConnectionPool.new(timeout: 5, size: 20) do
+      Sqewer::Connection.default
+    end
+  end
+
   # If we are within Rails, load the railtie
   require_relative 'sqewer/extensions/railtie' if defined?(Rails)
 

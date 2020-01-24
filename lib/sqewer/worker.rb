@@ -13,7 +13,7 @@ class Sqewer::Worker
   attr_reader :logger
 
   # @return [Sqewer::Connection] The connection for sending and receiving messages
-  attr_reader :connection
+  attr_reader :connection_pool
 
   # @return [Sqewer::Serializer] The serializer for unmarshalling and marshalling
   attr_reader :serializer
@@ -48,13 +48,13 @@ class Sqewer::Worker
   #
   # @param connection[Sqewer::Connection] the object that handles polling and submitting
   # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
-  # @param execution_context_class[Class] the class for the execution context (will be instantiated by 
+  # @param execution_context_class[Class] the class for the execution context (will be instantiated by
   # the worker for each job execution)
   # @param submitter_class[Class] the class used for submitting jobs (will be instantiated by the worker for each job execution)
   # @param middleware_stack[Sqewer::MiddlewareStack] the middleware stack that is going to be used
   # @param logger[Logger] the logger to log execution to and to pass to the jobs
   # @param num_threads[Fixnum] how many worker threads to spawn
-  def initialize(connection: Sqewer::Connection.default,
+  def initialize(connection_pool: Sqewer.connection_pool,
       serializer: Sqewer::Serializer.default,
       execution_context_class: Sqewer::ExecutionContext,
       submitter_class: Sqewer::Submitter,
@@ -63,7 +63,7 @@ class Sqewer::Worker
       num_threads: DEFAULT_NUM_THREADS)
 
     @logger = logger
-    @connection = connection
+    @connection_pool = connection_pool
     @serializer = serializer
     @middleware_stack = middleware_stack
     @execution_context_class = execution_context_class
@@ -104,7 +104,9 @@ class Sqewer::Worker
           break if stopping?
 
           if queue_has_capacity?
-            messages = @connection.receive_messages
+            messages = connection_pool.with do |connection|
+              connection.receive_messages
+            end
             if messages.any?
               messages.each {|m| @execution_queue << m }
               @logger.debug { "[worker] Received and buffered %d messages" % messages.length } if messages.any?
@@ -201,7 +203,7 @@ class Sqewer::Worker
     # we can send out those commands in one go (without interfering with senders
     # on other threads, as it seems the Aws::SQS::Client is not entirely
     # thread-safe - or at least not it's HTTP client part).
-    box = Sqewer::ConnectionMessagebox.new(connection)
+    box = Sqewer::ConnectionMessagebox.new(connection_pool)
     return box.delete_message(message.receipt_handle) unless message.has_body?
 
     job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body, message.attributes) do
@@ -241,7 +243,7 @@ class Sqewer::Worker
     # we can send out those commands in one go (without interfering with senders
     # on other threads, as it seems the Aws::SQS::Client is not entirely
     # thread-safe - or at least not it's HTTP client part).
-    box = Sqewer::ConnectionMessagebox.new(connection)
+    box = Sqewer::ConnectionMessagebox.new(connection_pool)
 
     job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body, message.attributes) do
       serializer.unserialize(message.body)

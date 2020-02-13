@@ -7,7 +7,7 @@ describe Sqewer::Worker, :sqs => true do
   }
   
   it 'has all the necessary attributes' do
-    attrs = [:logger, :connection, :serializer, :middleware_stack, 
+    attrs = [:logger, :connection_pool, :serializer, :middleware_stack,
       :execution_context_class, :submitter_class, :num_threads]
     default_worker = described_class.default
     attrs.each do | attr_name |
@@ -53,7 +53,9 @@ describe Sqewer::Worker, :sqs => true do
       allow(fake_conn).to receive(:receive_messages) {
         loop { sleep 0.5 }
       }
-      worker = described_class.new(logger: test_logger, connection: fake_conn)
+      fake_conn_pool = double('Fake pool')
+      allow(fake_conn_pool).to receive(:with).and_yield(fake_conn)
+      worker = described_class.new(logger: test_logger, connection_pool: fake_conn_pool)
       worker.start
       sleep 2
       worker.stop
@@ -64,9 +66,11 @@ describe Sqewer::Worker, :sqs => true do
     it 'it stops itself gracefully' do
       fake_conn = double('bad connection')
       allow(fake_conn).to receive(:receive_messages).and_raise("boom")
+      fake_conn_pool = double('Fake pool')
+      allow(fake_conn_pool).to receive(:with).and_yield(fake_conn)
 
       log_device = StringIO.new('')
-      worker = described_class.new(logger: Logger.new(log_device), connection: fake_conn)
+      worker = described_class.new(logger: Logger.new(log_device), connection_pool: fake_conn_pool)
 
       expect(worker).to receive(:stop).at_least(:once)
       expect(worker).not_to receive(:kill)

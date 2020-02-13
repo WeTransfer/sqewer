@@ -17,8 +17,8 @@ require 'thread'
 # a messagebox will be able to buffer those sends and pack them in batches,
 # consequently performing less requests
 class Sqewer::ConnectionMessagebox
-  def initialize(connection)
-    @connection = connection
+  def initialize(connection_pool)
+    @connection_pool = connection_pool
     @deletes = []
     @sends = []
     @mux = Mutex.new
@@ -49,14 +49,16 @@ class Sqewer::ConnectionMessagebox
   # All of those will use batching where possible.
   def flush!
     @mux.synchronize do
-      @connection.send_multiple_messages do | buffer |
-        @sends.each { |body, kwargs| buffer.send_message(body, **kwargs) }
-      end
+      @connection_pool.with do |connection|
+        connection.send_multiple_messages do | buffer |
+          @sends.each { |body, kwargs| buffer.send_message(body, **kwargs) }
+        end
 
-      @connection.delete_multiple_messages do | buffer |
-        @deletes.each { |id| buffer.delete_message(id) }
+        connection.delete_multiple_messages do | buffer |
+          @deletes.each { |id| buffer.delete_message(id) }
+        end
+        (@sends.length + @deletes.length).tap{ @sends.clear; @deletes.clear }
       end
-      (@sends.length + @deletes.length).tap{ @sends.clear; @deletes.clear }
     end
   end
 end

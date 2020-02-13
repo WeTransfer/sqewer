@@ -3,10 +3,10 @@ require_relative '../spec_helper'
 describe Sqewer::Submitter do
   describe '.default' do
     it 'returns a set up Submitter with the configured Connection and Serializer' do
-      expect(ENV).to receive(:fetch).with('SQS_QUEUE_URL').and_return('https://some-queue.aws.com')
       
+      # expect(ENV).to receive(:fetch).with('SQS_QUEUE_URL').and_return('https://some-queue.aws.com')
       s = described_class.default
-      expect(s.connection).to respond_to(:send_message)
+      expect(s.connection_pool).to respond_to(:with)
       expect(s.serializer).to respond_to(:serialize)
     end
   end
@@ -21,10 +21,12 @@ describe Sqewer::Submitter do
       
       fake_connection = double('Some SQS connection')
       expect(fake_connection).to receive(:send_message).at_least(5).times.with('serialized-object-data', any_args)
+      fake_connection_pool = double('Fake pool')
+      allow(fake_connection_pool).to receive(:with).and_yield(fake_connection)
 
       fake_job = double('Some job', run: true)
       
-      subject = described_class.new(fake_connection, fake_serializer)
+      subject = described_class.new(fake_connection_pool, fake_serializer)
       5.times { subject.submit!(fake_job) }
     end
     
@@ -37,10 +39,12 @@ describe Sqewer::Submitter do
       
       fake_connection = double('Some SQS connection')
       expect(fake_connection).to receive(:send_message).with('serialized-object-data', {delay_seconds: 5})
+      fake_connection_pool = double('Fake pool')
+      allow(fake_connection_pool).to receive(:with).and_yield(fake_connection)
 
       fake_job = double('Some job', run: true)
       
-      subject = described_class.new(fake_connection, fake_serializer)
+      subject = described_class.new(fake_connection_pool, fake_serializer)
       subject.submit!(fake_job, delay_seconds: 5)
     end
     
@@ -57,19 +61,23 @@ describe Sqewer::Submitter do
       
       fake_connection = double('Some SQS connection')
       expect(fake_connection).to receive(:send_message).with('serialized-object-data', {delay_seconds: 899})
+      fake_connection_pool = double('Fake pool')
+      allow(fake_connection_pool).to receive(:with).and_yield(fake_connection)
 
       fake_job = double('Some job', run: true)
       
-      subject = described_class.new(fake_connection, fake_serializer)
+      subject = described_class.new(fake_connection_pool, fake_serializer)
       subject.submit!(fake_job, delay_seconds: 4585659855)
     end
 
     it "raises an error if the job does not respond to call" do
       fake_serializer = double('Some serializer')
       fake_connection = double('Some SQS connection')
+      fake_connection_pool = double('Fake pool')
+      allow(fake_connection_pool).to receive(:with).and_yield(fake_connection)
       fake_job = double('Some job')
       
-      subject = described_class.new(fake_connection, fake_serializer)
+      subject = described_class.new(fake_connection_pool, fake_serializer)
       expect {
         subject.submit!(fake_job, delay_seconds: 5)
       }.to raise_error(Sqewer::Submitter::NotSqewerJob)

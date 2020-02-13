@@ -2,13 +2,13 @@
 # (something that responds to `#send_message`)
 # and the serializer (something that responds to `#serialize`) to
 # convert the job into the string that will be put in the queue.
-class Sqewer::Submitter < Struct.new(:connection, :serializer)
+class Sqewer::Submitter < Struct.new(:connection_pool, :serializer)
   NotSqewerJob = Class.new(StandardError)
 
   # Returns a default Submitter, configured with the default connection
   # and the default serializer.
   def self.default
-    new(Sqewer::Connection.default, Sqewer::Serializer.default)
+    new(Sqewer.default_connection_pool, Sqewer::Serializer.default)
   end
 
   def submit!(job, **kwargs_for_send)
@@ -21,7 +21,13 @@ class Sqewer::Submitter < Struct.new(:connection, :serializer)
     else
       serializer.serialize(job)
     end
-    connection.send_message(message_body, **kwargs_for_send)
+    if connection_pool.is_a?(Sqewer::ConnectionMessagebox)
+      connection_pool.send_message(message_body, **kwargs_for_send)
+    else
+      connection_pool.with do |connection|
+        connection.send_message(message_body, **kwargs_for_send)
+      end
+    end
   end
   
   private

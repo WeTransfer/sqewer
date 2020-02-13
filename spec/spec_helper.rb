@@ -28,6 +28,7 @@ RSpec.configure do |config|
       client.delete_queue(queue_url: ENV.fetch('SQS_QUEUE_URL')) rescue Aws::SQS::Errors::NonExistentQueue
       
       ENV.delete('SQS_QUEUE_URL')
+      Sqewer.reset_default_connection_pool!
     else
       example.run
     end

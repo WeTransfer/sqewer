@@ -21,8 +21,12 @@ class Sqewer::Submitter < Struct.new(:connection_pool, :serializer)
     else
       serializer.serialize(job)
     end
-    connection_pool.with do |connection|
-      connection.send_message(message_body, **kwargs_for_send)
+    if connection_pool.is_a?(Sqewer::ConnectionMessagebox)
+      connection_pool.send_message(message_body, **kwargs_for_send)
+    else
+      connection_pool.with do |connection|
+        connection.send_message(message_body, **kwargs_for_send)
+      end
     end
   end
   

@@ -12,7 +12,7 @@ class Sqewer::Worker
   # @return [Logger] The logger used for job execution
   attr_reader :logger
 
-  # @return [Sqewer::Connection] The connection for sending and receiving messages
+  # @return [ConnectionPool] The pool of connections for sending and receiving messages
   attr_reader :connection_pool
 
   # @return [Sqewer::Serializer] The serializer for unmarshalling and marshalling
@@ -46,7 +46,7 @@ class Sqewer::Worker
   # Creates a new Worker. The Worker, unlike it is in the Rails tradition, is only responsible for
   # the actual processing of jobs, and not for the job arguments.
   #
-  # @param connection[Sqewer::Connection] the object that handles polling and submitting
+  # @param connection_pool[ConnectionPool] pool of objects that handle polling and submitting
   # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
   # @param execution_context_class[Class] the class for the execution context (will be instantiated by
   # the worker for each job execution)

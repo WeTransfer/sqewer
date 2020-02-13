@@ -54,7 +54,7 @@ class Sqewer::Worker
   # @param middleware_stack[Sqewer::MiddlewareStack] the middleware stack that is going to be used
   # @param logger[Logger] the logger to log execution to and to pass to the jobs
   # @param num_threads[Fixnum] how many worker threads to spawn
-  def initialize(connection_pool: Sqewer.connection_pool,
+  def initialize(connection_pool: Sqewer.default_connection_pool,
       serializer: Sqewer::Serializer.default,
       execution_context_class: Sqewer::ExecutionContext,
       submitter_class: Sqewer::Submitter,

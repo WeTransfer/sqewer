@@ -8,7 +8,7 @@ class Sqewer::Submitter < Struct.new(:connection_pool, :serializer)
   # Returns a default Submitter, configured with the default connection
   # and the default serializer.
   def self.default
-    new(Sqewer.connection_pool, Sqewer::Serializer.default)
+    new(Sqewer.default_connection_pool, Sqewer::Serializer.default)
   end
 
   def submit!(job, **kwargs_for_send)

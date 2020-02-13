@@ -26,8 +26,8 @@ module Sqewer
     Sqewer::Submitter.default.submit!(*jobs, **options)
   end
   
-  def self.connection_pool
-    @connection_pool ||= ConnectionPool.new do
+  def self.default_connection_pool
+    @default_connection_pool ||= ConnectionPool.new do
       Sqewer::Connection.default
     end
   end

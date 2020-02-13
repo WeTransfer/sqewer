@@ -27,7 +27,7 @@ module Sqewer
   end
   
   def self.connection_pool
-    @connection_pool ||= ConnectionPool.new(timeout: 5, size: 20) do
+    @connection_pool ||= ConnectionPool.new do
       Sqewer::Connection.default
     end
   end

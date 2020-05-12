@@ -212,17 +212,21 @@ class Sqewer::Worker
     submitter = submitter_class.new(box, serializer)
     context = execution_context_class.new(submitter, {'logger' => logger})
 
-    t = Time.now
+    t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     middleware_stack.around_execution(job, context) do
       job.method(:run).arity.zero? ? job.run : job.run(context)
+      # delete_message will enqueue the message for deletion,
+      # but when flush! is called _first_ the messages pending will be
+      # delivered to the queue, THEN all the deletes are going to be performed.
+      # So it is safe to call delete here first - the delete won't get to the queue
+      # if flush! fails to spool pending messages.
+      box.delete_message(message.receipt_handle)
+      n_flushed = box.flush!
+      logger.debug { "[worker] Flushed %d connection commands" % n_flushed }
     end
-    box.delete_message(message.receipt_handle)
 
-    delta = Time.now - t
+    dt = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
     logger.info { "[worker] Finished %s in %0.2fs" % [job.inspect, delta] }
-  ensure
-    n_flushed = box.flush!
-    logger.debug { "[worker] Flushed %d connection commands" % n_flushed } if n_flushed.nonzero?
   end
 
   def take_and_execute

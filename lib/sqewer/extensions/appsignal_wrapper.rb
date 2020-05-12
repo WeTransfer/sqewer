@@ -4,7 +4,6 @@ module Sqewer
     # to Appsignal and to monitor performance. Will only activate
     # if the Appsignal gem is loaded within the current process and active.
     class AppsignalWrapper
-
       def self.new
         if defined?(Appsignal)
           super

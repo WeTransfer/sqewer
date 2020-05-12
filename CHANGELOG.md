@@ -1,3 +1,8 @@
+### 6.4.0
+- Raise an exception in submit! if the job serializes to a message that is
+  above the native SQS limit for message size.
+- Insert Sqewer::Error between StandardError and our custom errors for easier rescuing
+
 ### 6.3.0
 - Add support for Ruby 2.7
 

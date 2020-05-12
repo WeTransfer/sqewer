@@ -41,4 +41,15 @@ class Sqewer::MiddlewareStack
       ->{ middleware_object.public_send(:around_deserialization, serializer, message_id, message_body, message_attributes, &outer_block) }
     }.call
   end
+
+  def around_messagebox_cleanup(message_box, &inner_block)
+    return yield if @handlers.empty?
+
+    responders = @handlers.select{|e| e.respond_to?(:around_messagebox_cleanup) }
+    responders.reverse.inject(inner_block) {|outer_block, middleware_object|
+      ->{
+        middleware_object.public_send(:around_execution, message_box, &outer_block)
+      }
+    }.call
+  end
 end

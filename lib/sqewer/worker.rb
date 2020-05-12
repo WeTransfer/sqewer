@@ -225,7 +225,7 @@ class Sqewer::Worker
       logger.debug { "[worker] Flushed %d connection commands" % n_flushed }
     end
 
-    dt = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
+    delta = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
     logger.info { "[worker] Finished %s in %0.2fs" % [job.inspect, delta] }
   end
 

@@ -48,7 +48,7 @@ class Sqewer::Worker
   #
   # @param connection[Sqewer::Connection] the object that handles polling and submitting
   # @param serializer[#serialize, #unserialize] the serializer/unserializer for the jobs
-  # @param execution_context_class[Class] the class for the execution context (will be instantiated by 
+  # @param execution_context_class[Class] the class for the execution context (will be instantiated by
   # the worker for each job execution)
   # @param submitter_class[Class] the class used for submitting jobs (will be instantiated by the worker for each job execution)
   # @param middleware_stack[Sqewer::MiddlewareStack] the middleware stack that is going to be used

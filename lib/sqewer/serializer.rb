@@ -13,7 +13,7 @@ class Sqewer::Serializer
     @instance ||= new
   end
 
-  AnonymousJobClass = Class.new(StandardError)
+  AnonymousJobClass = Class.new(Sqewer::Error)
 
   # Instantiate a Job object from a message body string. If the
   # returned result is `nil`, the job will be skipped.
@@ -33,18 +33,18 @@ class Sqewer::Serializer
     # use a default that will put us ahead of that execution deadline from the start.
     t = Time.now.to_i
     execute_after = job_ticket_hash.fetch(:_execute_after) { t - 5 }
-    
+
     job_params = job_ticket_hash.delete(:_job_params)
     job = if job_params.nil? || job_params.empty?
       job_class.new # no args
     else
       job_class.new(**job_params) # The rest of the message are keyword arguments for the job
     end
-    
-    # If the job is not up for execution now, wrap it with something that will 
+
+    # If the job is not up for execution now, wrap it with something that will
     # re-submit it for later execution when the run() method is called
     return ::Sqewer::Resubmit.new(job, execute_after) if execute_after > t
-    
+
     job
   end
 
@@ -65,7 +65,7 @@ class Sqewer::Serializer
     job_params = job.respond_to?(:to_h) ? job.to_h : nil
     job_ticket_hash = {_job_class: job_class_name, _job_params: job_params}
     job_ticket_hash[:_execute_after] = execute_after_timestamp.to_i if execute_after_timestamp
-    
+
     JSON.dump(job_ticket_hash)
   end
 end

@@ -5,8 +5,8 @@
 # * to_h() will produce a symbolized Hash with all the properties defined using attr_accessor, and the job_class_name
 # * inspect() will provide a sensible default string representation for logging
 module Sqewer::SimpleJob
-  UnknownJobAttribute = Class.new(StandardError)
-  MissingAttribute = Class.new(StandardError)
+  UnknownJobAttribute = Class.new(Sqewer::Error)
+  MissingAttribute = Class.new(Sqewer::Error)
 
   EQ_END = /(\w+)(\=)$/
 

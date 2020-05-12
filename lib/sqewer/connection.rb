@@ -11,7 +11,7 @@ class Sqewer::Connection
   MAX_RANDOM_FAILURES_PER_CALL = 10
   MAX_RANDOM_RECEIVE_FAILURES = 100 # sure to hit the max_elapsed_time of 900 seconds
 
-  NotOurFaultAwsError = Class.new(StandardError)
+  NotOurFaultAwsError = Class.new(Sqewer::Error)
 
   # A wrapper for most important properties of the received message
   class Message < Struct.new(:receipt_handle, :body, :attributes)

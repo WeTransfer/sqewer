@@ -222,7 +222,7 @@ class Sqewer::Worker
       # if flush! fails to spool pending messages.
       box.delete_message(message.receipt_handle)
       n_flushed = box.flush!
-      logger.debug { "[worker] Flushed %d connection commands" % n_flushed }
+      logger.debug { "[worker] Flushed %d connection commands" % n_flushed } if n_flushed > 0
     end
 
     delta = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
@@ -238,36 +238,5 @@ class Sqewer::Worker
   rescue => e # anything else, at or below StandardError that does not need us to quit
     @logger.error { '[worker] Failed "%s..." with %s: %s' % [message.inspect[0..64], e.class, e.message] }
     e.backtrace.each { |s| @logger.debug{"\t#{s}"} }
-  end
-
-  def perform(message)
-    # Create a messagebox that buffers all the calls to Connection, so that
-    # we can send out those commands in one go (without interfering with senders
-    # on other threads, as it seems the Aws::SQS::Client is not entirely
-    # thread-safe - or at least not it's HTTP client part).
-    box = Sqewer::ConnectionMessagebox.new(connection)
-
-    job = middleware_stack.around_deserialization(serializer, message.receipt_handle, message.body, message.attributes) do
-      serializer.unserialize(message.body)
-    end
-    return unless job
-
-    submitter = submitter_class.new(box, serializer)
-    context = execution_context_class.new(submitter, {'logger' => logger})
-
-    t = Time.now
-    middleware_stack.around_execution(job, context) do
-      job.method(:run).arity.zero? ? job.run : job.run(context)
-    end
-
-    # Perform two flushes, one for any possible jobs the job has spawned,
-    # and one for the job delete afterwards
-    box.delete_message(message.receipt_handle)
-
-    delta = Time.now - t
-    logger.info { "[worker] Finished %s in %0.2fs" % [job.inspect, delta] }
-  ensure
-    n_flushed = box.flush!
-    logger.debug { "[worker] Flushed %d connection commands" % n_flushed } if n_flushed.nonzero?
   end
 end

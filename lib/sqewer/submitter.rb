@@ -40,7 +40,7 @@ class Sqewer::Submitter < Struct.new(:connection, :serializer)
   def validate_message_for_size!(message_body, job)
     actual_bytesize = message_body.bytesize
     return if actual_bytesize <= MAX_PERMITTED_MESSAGE_SIZE_BYTES
-    error_message = "Job #{job.class.inspect} serialized to a message which was too large (#{actual_bytesize} bytes)"
+    error_message = "Job #{job.inspect} serialized to a message which was too large (#{actual_bytesize} bytes)"
     raise MessageTooLarge.new(error_message)
   end
 

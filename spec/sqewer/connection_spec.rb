@@ -63,7 +63,26 @@ describe Sqewer::Connection do
         102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
       end
     end
-    
+
+    it 'regroups messages in batches to allow delivery if messages together are larger than 256KB of payload' do
+      fake_sqs_client = double('Client')
+      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      expect(fake_sqs_client).to receive(:send_message_batch).exactly(4).times {|kwargs|
+        expect(kwargs[:queue_url]).to eq("https://fake-queue.com")
+        expect(kwargs[:entries]).to be_kind_of(Array)
+
+        entries = kwargs[:entries]
+        expect(entries.length).to eq(2)
+        double(failed: [])
+      }
+
+      conn = described_class.new('https://fake-queue.com')
+      string_of_128kb = "T" * (1024 * 128)
+      conn.send_multiple_messages do | b |
+        8.times { b.send_message(string_of_128kb) }
+      end
+    end
+
     it 'raises an exception if any message fails sending' do
       fake_sqs_client = double('Client')
       expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }

@@ -168,9 +168,13 @@ describe Sqewer::Connection do
       }
       fake_response = double(messages: fake_messages)
       
-      expect(fake_sqs_client).to receive(:receive_message).with({:queue_url=>"https://fake-queue", :wait_time_seconds=>5, 
-          :max_number_of_messages=>10}).and_return(fake_response)
       
+      expect(fake_sqs_client).to receive(:receive_message).with(
+        queue_url: "https://fake-queue",
+        wait_time_seconds: 5,
+        max_number_of_messages: 10,
+        attribute_names: ['All']
+      ).and_return(fake_response)
       messages = s.receive_messages
       expect(messages.length).to eq(5)
     end

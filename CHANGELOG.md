@@ -1,3 +1,6 @@
+### 6.4.1
+- Retrieve attributes when receiving messages from SQS 
+
 ### 6.4.0
 - Raise an exception in submit! if the job serializes to a message that is
   above the native SQS limit for message size.

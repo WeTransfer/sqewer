@@ -55,8 +55,12 @@ class Sqewer::Connection
   # @return [Array<Message>] an array of Message objects 
   def receive_messages
     Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_RECEIVE_FAILURES do
-      response = client.receive_message(queue_url: @queue_url,
-        wait_time_seconds: DEFAULT_TIMEOUT_SECONDS, max_number_of_messages: BATCH_RECEIVE_SIZE)
+      response = client.receive_message(
+        queue_url: @queue_url,
+        attribute_names: ['All'],
+        wait_time_seconds: DEFAULT_TIMEOUT_SECONDS,
+        max_number_of_messages: BATCH_RECEIVE_SIZE
+      )
       response.messages.map {|message| Message.new(message.receipt_handle, message.body, message.attributes) }
     end
   end

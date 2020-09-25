@@ -1,5 +1,8 @@
+### 6.5.0
+- Adds `$stdout.sync = true` to CLI to flush the logs to STDOUT
+
 ### 6.4.1
-- Retrieve attributes when receiving messages from SQS 
+- Retrieve attributes when receiving messages from SQS
 
 ### 6.4.0
 - Raise an exception in submit! if the job serializes to a message that is

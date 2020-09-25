@@ -1,3 +1,4 @@
+$stdout.sync = true
 # Wraps a Worker object in a process-wide commanline handler. Once the `start` method is
 # called, signal handlers will be installed for the following signals:
 #

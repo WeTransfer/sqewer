@@ -20,14 +20,14 @@ and to start processing, in your commandline handler:
 
     #!/usr/bin/env ruby
     require 'my_applicaion'
-    Sqewer::CLI.run
+    Sqewer::CLI.start
 
 To add arguments to the job
 
     class JobWithArgs
       include Sqewer::SimpleJob
       attr_accessor :times
-      
+
       def run
         ...
       end
@@ -119,11 +119,11 @@ include all the keyword arguments needed to instantiate the job when executing. 
       def initialize(to:, body:)
         ...
       end
-      
+
       def run()
         ...
       end
-      
+
       def to_h
         {to: @to, body: @body}
       end
@@ -151,7 +151,7 @@ conform to the job serialization format used internally. For example, you can ha
         message = JSON.load(message_blob)
         return if message['Service'] # AWS test
         return HandleS3Notification.new(message) if message['Records']
-        
+
         super # as default
       end
     end
@@ -176,7 +176,7 @@ The very minimal executable for running jobs would be this:
 
     #!/usr/bin/env ruby
     require 'my_applicaion'
-    Sqewer::CLI.run
+    Sqewer::CLI.start
 
 This will connect to the queue at the URL set in the `SQS_QUEUE_URL` environment variable, and
 use all the default parameters. The `CLI` module will also set up a signal handler to terminate
@@ -233,9 +233,9 @@ you generate. For example, you could use a pipe. But in a more general case some
           ActiveRAMGobbler.fetch_stupendously_many_things.each do |...|
           end
         end
-        
+
         _, status = Process.wait2(pid)
-        
+
         # Raise an error in the parent process to signal Sqewer that the job failed
         # if the child exited with a non-0 status
         raise "Child process crashed" unless status.exitstatus && status.exitstatus.zero?
@@ -252,7 +252,7 @@ You can wrap job processing in middleware. A full-featured middleware class look
         # msg_id is the receipt handle, msg_payload is the message body string, msg_attributes are the message's attributes
         yield
       end
-      
+
       # Surrounds the actual job execution
       def around_execution(job, context)
         # job is the actual job you will be running, context is the ExecutionContext.
@@ -378,7 +378,7 @@ products using this library, was a very bad idea (more workload for deployment).
 
 ## Why so many configurable components?
 
-Because sometimes your requirements differ just-a-little-bit from what is provided, and you have to swap your 
+Because sometimes your requirements differ just-a-little-bit from what is provided, and you have to swap your
 implementation in instead. One product needs foreign-submitted SQS jobs (S3 notifications). Another product
 needs a custom Logger subclass. Yet another product needs process-based concurrency on top of threads.
 Yet another process needs to manage database connections when running the jobs. Have 3-4 of those, and a
@@ -398,7 +398,7 @@ Because I found that a producer-consumer model with a thread pool works quite we
 the Ruby standard library alone.
 
 ## Contributing to the library
- 
+
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it.
 * Fork the project.

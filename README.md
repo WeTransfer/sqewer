@@ -347,6 +347,20 @@ it will not be free. We think that this is an acceptable workaround for now, tho
 you may be better off using a Rails scheduling system and use a cron job or similar to spin up your enqueue
 for the actual, executable background task.
 
+# Testing
+
+It's possible to use Sqlite to emulate SQS when running the tests.
+
+To do so, change the value of the env SQS_QUEUE_URL as the following examples:
+
+```
+# to use a file
+SQS_QUEUE_URL=sqlite:/path/filename.sqlite3
+
+# to use the memory
+SQS_QUEUE_URL=sqlite:/memory
+```
+
 # Frequently asked questions (A.K.A. _why is it done this way_)
 
 This document tries to answer some questions that may arise when reading or using the library. Hopefully

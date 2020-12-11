@@ -87,4 +87,14 @@ describe Sqewer::LocalConnection do
     Process.wait(consumer_pid)
     expect($?.exitstatus).to eq(0)
   end
+
+  it 'allows using an in memory database' do
+    conn = described_class.new('sqlite3://memory')
+
+    conn.send_message("Hello 1")
+    conn.send_message("Hello 2")
+
+    messages = conn.receive_messages
+    expect(messages.map(&:body)).to eq(["Hello 1", "Hello 2"])
+  end
 end

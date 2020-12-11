@@ -9,6 +9,10 @@ class Sqewer::LocalConnection < Sqewer::Connection
       raise "The scheme of the SQS queue URL should be with `sqlite3' but was %s" % uri.scheme
     end
 
+    if uri.hostname == 'memory'
+      return ['memory', nil]
+    end
+
     path_components = ['/', uri.hostname, uri.path].reject(&:nil?).reject(&:empty?).join('/').squeeze('/')
     dbfile_path = File.expand_path(path_components)
 
@@ -17,6 +21,14 @@ class Sqewer::LocalConnection < Sqewer::Connection
     [dbfile_path, queue_name]
   end
 
+  # A local connection can be created using a file or the memory
+  #
+  # Examples:
+  #
+  #   LocalConnection.new('sqlite3:/path/filename.sqlite3')
+  #   LocalConnection.new('sqlite3:/memory')
+  #
+  # Note: When using the memory, it's not possible to create more than 1 queue
   def initialize(queue_url_with_sqlite3_scheme)
     require 'sqlite3'
     @db_path, @queue_name = self.class.parse_queue_url(queue_url_with_sqlite3_scheme)
@@ -75,9 +87,14 @@ class Sqewer::LocalConnection < Sqewer::Connection
   private
 
   def with_db(**k)
-    SQLite3::Database.open(@db_path, **k) do |db|
-      db.busy_timeout = 5
-      return yield db
+    if @db_path == 'memory'
+      @db_connection ||= SQLite3::Database.new(':memory:')
+      return yield @db_connection
+    else
+      SQLite3::Database.open(@db_path, **k) do |db|
+        db.busy_timeout = 5
+        return yield db
+      end
     end
   rescue SQLite3::CantOpenException => e
     message_with_path = [e.message, 'at', @db_path].join(' ')

@@ -4,6 +4,13 @@
 # * initialize() will have keyword access to all accessors, and will ensure you have called each one of them
 # * to_h() will produce a symbolized Hash with all the properties defined using attr_accessor, and the job_class_name
 # * inspect() will provide a sensible default string representation for logging
+#
+# This module validates if the attributes defined in the job class are the same as
+# those persisted in the queue. More details on `Sqewer::SimpleJob#initialize`.
+# Because of this, it's required to create a new job class when adding of removing
+# an attribute.
+# This mechanism guarantees a strong consistency otherwise, a new deployed job class
+# could process old incompatible payloads.
 module Sqewer::SimpleJob
   UnknownJobAttribute = Class.new(Sqewer::Error)
   MissingAttribute = Class.new(Sqewer::Error)
@@ -53,7 +60,7 @@ module Sqewer::SimpleJob
       accessor = "#{k}="
       touched_attributes << k
       unless respond_to?(accessor)
-        raise UnknownJobAttribute, "Unknown attribute #{k.inspect} for #{self.class}" 
+        raise UnknownJobAttribute, "Unknown attribute #{k.inspect} for #{self.class}"
       end
 
       send("#{k}=", v)

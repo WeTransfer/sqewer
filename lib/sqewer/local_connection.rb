@@ -25,7 +25,13 @@ class Sqewer::LocalConnection < Sqewer::Connection
   #
   # Examples:
   #
-  #   LocalConnection.new('sqlite3://absolute_path/filename.sqlite3')
+  #   # To save the data in /tmp/filename.sqlite3
+  #   LocalConnection.new('sqlite3://tmp/filename.sqlite3')
+  #
+  #   # To save the data in /var/tmp/filename.sqlite3
+  #   LocalConnection.new('sqlite3://var/tmp/filename.sqlite3')
+  #
+  #   # To save the data in memory
   #   LocalConnection.new('sqlite3:memory')
   #
   # Note: When using the memory, it's not possible to create more than 1 queue

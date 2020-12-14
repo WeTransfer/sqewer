@@ -349,15 +349,20 @@ for the actual, executable background task.
 
 # Testing
 
-It's possible to use Sqlite to emulate SQS when running the tests.
+It's possible to use SQLite to emulate SQS when running the tests.
 
 To do so, change the value of the env SQS_QUEUE_URL as the following examples:
 
 ```
-# to use a file
-SQS_QUEUE_URL=sqlite3://absolute_path/filename.sqlite3
+# To use a file
 
-# to use the memory
+# It saves the data in /tmp/filename.sqlite3)
+SQS_QUEUE_URL=sqlite3://tmp/filename.sqlite3
+
+# It saves the data in /var/tmp/filename.sqlite3)
+SQS_QUEUE_URL=sqlite3://var/tmp/filename.sqlite3
+
+# To use the memory
 SQS_QUEUE_URL=sqlite3:memory
 ```
 

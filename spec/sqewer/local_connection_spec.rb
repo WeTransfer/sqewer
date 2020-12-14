@@ -89,7 +89,7 @@ describe Sqewer::LocalConnection do
   end
 
   it 'allows using an in memory database' do
-    conn = described_class.new('sqlite3://memory')
+    conn = described_class.new('sqlite3:memory')
 
     conn.send_message("Hello 1")
     conn.send_message("Hello 2")

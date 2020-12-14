@@ -3,14 +3,14 @@ class Sqewer::LocalConnection < Sqewer::Connection
   ASSUME_DEADLETTER_AFTER_N_DELIVERIES = 10
 
   def self.parse_queue_url(queue_url_starting_with_sqlite3_proto)
+    if queue_url_starting_with_sqlite3_proto == 'sqlite3:memory'
+      return ['memory', nil]
+    end
+
     uri = URI.parse(queue_url_starting_with_sqlite3_proto)
 
     unless uri.scheme == 'sqlite3'
       raise "The scheme of the SQS queue URL should be with `sqlite3' but was %s" % uri.scheme
-    end
-
-    if uri.hostname == 'memory'
-      return ['memory', nil]
     end
 
     path_components = ['/', uri.hostname, uri.path].reject(&:nil?).reject(&:empty?).join('/').squeeze('/')

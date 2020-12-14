@@ -25,8 +25,8 @@ class Sqewer::LocalConnection < Sqewer::Connection
   #
   # Examples:
   #
-  #   LocalConnection.new('sqlite3:/path/filename.sqlite3')
-  #   LocalConnection.new('sqlite3:/memory')
+  #   LocalConnection.new('sqlite3://absolute_path/filename.sqlite3')
+  #   LocalConnection.new('sqlite3:memory')
   #
   # Note: When using the memory, it's not possible to create more than 1 queue
   def initialize(queue_url_with_sqlite3_scheme)

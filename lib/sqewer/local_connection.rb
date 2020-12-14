@@ -4,7 +4,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
 
   def self.parse_queue_url(queue_url_starting_with_sqlite3_proto)
     if queue_url_starting_with_sqlite3_proto == 'sqlite3:memory'
-      return ['memory', nil]
+      return [':memory:', nil]
     end
 
     uri = URI.parse(queue_url_starting_with_sqlite3_proto)
@@ -87,8 +87,8 @@ class Sqewer::LocalConnection < Sqewer::Connection
   private
 
   def with_db(**k)
-    if @db_path == 'memory'
-      @db_connection ||= SQLite3::Database.new(':memory:')
+    if @db_path == ':memory:'
+      @db_connection ||= SQLite3::Database.new(@db_path)
       return yield @db_connection
     else
       SQLite3::Database.open(@db_path, **k) do |db|

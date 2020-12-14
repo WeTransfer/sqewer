@@ -355,10 +355,11 @@ To do so, change the value of the env SQS_QUEUE_URL as the following examples:
 
 ```
 # to use a file
-SQS_QUEUE_URL=sqlite3:/path/filename.sqlite3
+SQS_QUEUE_URL=sqlite3://path/filename.sqlite3
+# note: the path is absolute, in this case /path
 
 # to use the memory
-SQS_QUEUE_URL=sqlite3:/memory
+SQS_QUEUE_URL=sqlite3://memory
 ```
 
 # Frequently asked questions (A.K.A. _why is it done this way_)

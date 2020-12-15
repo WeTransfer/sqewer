@@ -25,9 +25,6 @@ class Sqewer::LocalConnection < Sqewer::Connection
   #
   # Examples:
   #
-  #   # To save the data in /tmp/filename.sqlite3
-  #   LocalConnection.new('sqlite3://tmp/filename.sqlite3')
-  #
   #   # To save the data in /var/tmp/filename.sqlite3
   #   LocalConnection.new('sqlite3://var/tmp/filename.sqlite3')
   #

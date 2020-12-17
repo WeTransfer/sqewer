@@ -88,6 +88,10 @@ Note that at this point only arguments that are raw JSON types are supported:
 
 If you need marshalable Ruby types there instead, you might need to implement a custom `Serializer.`
 
+### Sqewer::SimpleJob
+
+The module `Sqewer::SimpleJob` can be included to a job class to add some features, specially dealing with attributes, see more details [here](https://github.com/WeTransfer/sqewer/blob/master/lib/sqewer/simple_job.rb).
+
 ## Jobs spawning dependent jobs
 
 If your `run` method on the job object accepts arguments (has non-zero `arity` ) the `ExecutionContext` will

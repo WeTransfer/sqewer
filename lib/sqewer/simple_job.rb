@@ -7,9 +7,9 @@
 #
 # This module validates if the attributes defined in the job class are the same as
 # those persisted in the queue. More details on `Sqewer::SimpleJob#initialize`.
-# Because of this, it's required to create a new job class when adding of removing
+# Because of this, it's required to create a new job class when adding or removing
 # an attribute.
-# This mechanism guarantees a strong consistency otherwise, a new deployed job class
+# This mechanism guarantees strong consistency. Without it, a new deployed job class
 # could process old incompatible payloads.
 module Sqewer::SimpleJob
   UnknownJobAttribute = Class.new(Sqewer::Error)

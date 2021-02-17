@@ -91,7 +91,7 @@ class Sqewer::Worker
 
     consumers = (1..@num_threads).map do
       Thread.new do
-        catch(:goodbye) { loop {take_and_execute} }
+        loop { take_and_execute }
       end
     end
 
@@ -233,8 +233,11 @@ class Sqewer::Worker
     message = @execution_queue.pop(nonblock=true)
     handle_message(message)
   rescue ThreadError # Queue is empty
-    throw :goodbye if stopping?
-    sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
+    if stopping?
+      Thread.current.exit
+    else
+      sleep SLEEP_SECONDS_ON_EMPTY_QUEUE
+    end
   rescue => e # anything else, at or below StandardError that does not need us to quit
     @logger.error { '[worker] Failed "%s..." with %s: %s' % [message.inspect[0..64], e.class, e.message] }
     e.backtrace.each { |s| @logger.debug{"\t#{s}"} }

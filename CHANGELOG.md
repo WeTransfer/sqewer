@@ -1,3 +1,8 @@
+### 6.5.1
+- Also retry on `Aws::SQS::Errors::InternalError` exception when receiving/sending messages. This will make
+  the receiving thread more resilient to sudden SQS failures. By the time SQS recovers the receiving thread
+  should stay alive.
+
 ### 6.5.0
 - Adds `$stdout.sync = true` to CLI to flush the logs to STDOUT
 

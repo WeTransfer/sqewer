@@ -52,9 +52,9 @@ class Sqewer::Connection
   # even after 15 minutes it is either down or the server is misconfigured. Either way it makes no sense to
   # continue.
   #
-  # @return [Array<Message>] an array of Message objects 
+  # @return [Array<Message>] an array of Message objects
   def receive_messages
-    Retriable.retriable on: Seahorse::Client::NetworkingError, tries: MAX_RANDOM_RECEIVE_FAILURES do
+    Retriable.retriable on: network_and_aws_sdk_errors, tries: MAX_RANDOM_RECEIVE_FAILURES do
       response = client.receive_message(
         queue_url: @queue_url,
         attribute_names: ['All'],
@@ -69,7 +69,7 @@ class Sqewer::Connection
   #
   # @param message_body[String] the message to send
   # @param kwargs_for_send[Hash] additional arguments for the submit (such as `delay_seconds`).
-  # Passes the arguments to the AWS SDK. 
+  # Passes the arguments to the AWS SDK.
   # @return [void]
   def send_message(message_body, **kwargs_for_send)
     send_multiple_messages {|via| via.send_message(message_body, **kwargs_for_send) }
@@ -191,8 +191,12 @@ class Sqewer::Connection
 
   private
 
+  def network_and_aws_sdk_errors
+    [NotOurFaultAwsError, Seahorse::Client::NetworkingError, Aws::SQS::Errors::InternalError]
+  end
+
   def handle_batch_with_retries(method, batch)
-    Retriable.retriable on: [NotOurFaultAwsError, Seahorse::Client::NetworkingError], tries: MAX_RANDOM_FAILURES_PER_CALL do
+    Retriable.retriable on: network_and_aws_sdk_errors, tries: MAX_RANDOM_FAILURES_PER_CALL do
       resp = client.send(method, queue_url: @queue_url, entries: batch)
       wrong_messages, aws_failures = resp.failed.partition {|m| m.sender_fault }
       if wrong_messages.any?

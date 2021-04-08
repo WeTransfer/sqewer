@@ -48,7 +48,7 @@ The messages will only be deleted from SQS once the job execution completes with
 
 ## Requirements
 
-Ruby 2.1+, version 2 of the AWS SDK. You can also run Sqewer backed by a SQLite database file, which can be handy for development situations.
+Ruby 2.6+, version 2 of the AWS SDK. You can also run Sqewer backed by a SQLite database file, which can be handy for development situations.
 
 ## Job storage
 
@@ -288,7 +288,7 @@ and traceable (make good use of logging).
 
 # Usage with Rails via ActiveJob
 
-This gem includes a queue adapter for usage with ActiveJob in Rails 4.2+. The functionality
+This gem includes a queue adapter for usage with ActiveJob in Rails 5+. The functionality
 is well-tested and should function for any well-conforming ActiveJob subclasses.
 
 To run the default `sqewer` worker setup against your Rails application, first set it as the

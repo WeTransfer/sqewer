@@ -1,4 +1,6 @@
-### 6.6.0
+### 7.0.0
+- Remove support of Ruby 2.3, 2.4 and 2.5
+- Remove support of Rails 4
 - Change `Sqewer::Connection` to preferentially use a singleton instance of `Aws::SQS::Client`, which can be set using `Sqewer.client=`. This avoids many HTTP requests to the AWS metadata endpoint when getting credentials.
 
 ### 6.5.1

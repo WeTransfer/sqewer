@@ -211,7 +211,10 @@ class Sqewer::Connection
   end
 
   def client
-    @client ||= Aws::SQS::Client.new(
+    # It's better using a singleton client to prevent making a lot of HTTP
+    # requests to the AWS metadata endpoint when getting credentials.
+    # Maybe in the future, we can remove @client and use Storm.client only.
+    Sqewer.client || @client ||= Aws::SQS::Client.new(
       instance_profile_credentials_timeout: 1, # defaults to 1 second
       instance_profile_credentials_retries: 5, # defaults to 0 retries
     )

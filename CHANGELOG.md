@@ -1,3 +1,8 @@
+### 7.0.0
+- Remove support of Ruby 2.3, 2.4 and 2.5
+- Remove support of Rails 4
+- Change `Sqewer::Connection` to preferentially use a singleton instance of `Aws::SQS::Client`, which can be set using `Sqewer.client=`. This avoids many HTTP requests to the AWS metadata endpoint when getting credentials.
+
 ### 6.5.1
 - Also retry on `Aws::SQS::Errors::InternalError` exception when receiving/sending messages. This will make
   the receiving thread more resilient to sudden SQS failures. By the time SQS recovers the receiving thread

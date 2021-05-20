@@ -17,39 +17,36 @@ describe Sqewer::Connection do
   end
 
   describe 'using a singleton SQS client' do
-    it 'uses a singleton sqs_client if Sqewer.client is set' do
-      fake_sqs_client = instance_double(Aws::SQS::Client)
-      Sqewer.client = fake_sqs_client
+    it 'uses a singleton sqs_client' do
+      # we call this method to set the singleton client if it's not set yet
+      Sqewer.client
 
-      expect(fake_sqs_client).to receive(:send_message_batch).twice.and_return(double(failed: []))
+      expect(Aws::SQS::Client).to_not receive(:new)
+      expect(Sqewer.client).to receive(:send_message_batch).twice.and_return(double(failed: []))
 
       conn = described_class.new('https://fake-queue.com')
       conn.send_message('abcdef')
 
       conn = described_class.new('https://fake-queue2.com')
       conn.send_message('abcdef2')
-    ensure
-      Sqewer.client = nil
     end
   end
 
   describe '#send_message' do
     it 'sends the message to the SQS client created with the URL given to the constructor' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       expect(fake_sqs_client).to receive(:send_message_batch).and_return(double(failed: []))
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       expect(conn).to receive(:send_multiple_messages).and_call_original
       conn.send_message('abcdef')
     end
 
     it 'passes keyword args to Aws::SQS::Client' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       expect(fake_sqs_client).to receive(:send_message_batch).and_return(double(failed: []))
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       expect(conn).to receive(:send_multiple_messages).and_call_original
       conn.send_message('abcdef', delay_seconds: 5)
     end
@@ -59,8 +56,7 @@ describe Sqewer::Connection do
 
   describe '#send_multiple_messages' do
     it 'sends 100 messages' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       expect(fake_sqs_client).to receive(:send_message_batch).exactly(11).times {|kwargs|
         expect(kwargs[:queue_url]).to eq("https://fake-queue.com")
         expect(kwargs[:entries]).to be_kind_of(Array)
@@ -75,15 +71,14 @@ describe Sqewer::Connection do
         double(failed: [])
       }
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       conn.send_multiple_messages do | b |
         102.times { b.send_message("Hello - #{SecureRandom.uuid}") }
       end
     end
 
     it 'regroups messages in batches to allow delivery if messages together are larger than 256KB of payload' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       expect(fake_sqs_client).to receive(:send_message_batch).exactly(4).times {|kwargs|
         expect(kwargs[:queue_url]).to eq("https://fake-queue.com")
         expect(kwargs[:entries]).to be_kind_of(Array)
@@ -93,7 +88,7 @@ describe Sqewer::Connection do
         double(failed: [])
       }
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       string_of_128kb = "T" * (1024 * 128)
       conn.send_multiple_messages do | b |
         8.times { b.send_message(string_of_128kb) }
@@ -101,13 +96,12 @@ describe Sqewer::Connection do
     end
 
     it 'raises an exception if any message fails sending' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       expect(fake_sqs_client).to receive(:send_message_batch) {|kwargs|
         double(failed: [double(message: 'Something went wrong at AWS', sender_fault: true)])
       }
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       expect {
         conn.send_multiple_messages do | b |
           10.times { b.send_message("Hello - #{SecureRandom.uuid}") }
@@ -116,14 +110,13 @@ describe Sqewer::Connection do
     end
 
     it 'retries the message if it fails with a random AWS error' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       failed_response = double(failed: [double(message: 'Something went wrong at AWS', sender_fault: false, id: 0)])
       success_response = double(failed: [])
       # expect send_message to be called three times, the original one and two retries. The second retry succeeds.
       expect(fake_sqs_client).to receive(:send_message_batch).and_return(failed_response,failed_response,success_response).exactly(3).times
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       conn.send_multiple_messages do | b |
         b.send_message("Hello - #{SecureRandom.uuid}")
       end
@@ -139,8 +132,7 @@ describe Sqewer::Connection do
 
   describe '#delete_multiple_messages' do
     it 'deletes 100 messages' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       expect(fake_sqs_client).to receive(:delete_message_batch).exactly(11).times {|kwargs|
         expect(kwargs[:queue_url]).to eq("https://fake-queue.com")
         expect(kwargs[:entries]).to be_kind_of(Array)
@@ -154,20 +146,19 @@ describe Sqewer::Connection do
         double(failed: [])
       }
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       conn.delete_multiple_messages do | b |
         102.times { b.delete_message(SecureRandom.uuid) }
       end
     end
 
     it 'raises an exception if any message fails sending' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       expect(fake_sqs_client).to receive(:delete_message_batch) {|kwargs|
         double(failed: [double(message: 'Something went wrong at AWS', sender_fault: true, id:1)])
       }
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       expect {
         conn.delete_multiple_messages do | b |
           102.times { b.delete_message(SecureRandom.uuid) }
@@ -176,14 +167,13 @@ describe Sqewer::Connection do
     end
 
     it 'retries the message if it fails with a random AWS error' do
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
       failed_response = double(failed: [double(message: 'Something went wrong at AWS', sender_fault: false, id: 0)])
       success_response = double(failed: [])
       # expect send_message to be called three times, the original one and two retries. The second retry succeeds.
       expect(fake_sqs_client).to receive(:delete_message_batch).and_return(failed_response,failed_response,success_response).exactly(3).times
 
-      conn = described_class.new('https://fake-queue.com')
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       conn.delete_multiple_messages do | b |
         b.delete_message("Hello - #{SecureRandom.uuid}")
       end
@@ -194,16 +184,13 @@ describe Sqewer::Connection do
 
   describe '#receive_messages' do
     it 'uses the batched receive feature' do
-      s = described_class.new('https://fake-queue')
-
-      fake_sqs_client = double('Client')
-      expect(Aws::SQS::Client).to receive(:new) { fake_sqs_client }
+      fake_sqs_client = instance_double(Aws::SQS::Client)
+      s = described_class.new('https://fake-queue', client: fake_sqs_client)
 
       fake_messages = (1..5).map {
         double(receipt_handle: SecureRandom.hex(4), body: SecureRandom.random_bytes(128), attributes: { 'attr' => 'val' })
       }
       fake_response = double(messages: fake_messages)
-
 
       expect(fake_sqs_client).to receive(:receive_message).with(
         queue_url: "https://fake-queue",

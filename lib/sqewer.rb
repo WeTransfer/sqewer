@@ -11,23 +11,9 @@ module Sqewer
     end
   end
 
-  # Sets an instance of Aws::SQS::Client to be used as a singleton.
-  # We recommend setting the options instance_profile_credentials_timeout and
-  # instance_profile_credentials_retries, for example:
-  #
-  #   sqs_client = Aws::SQS::Client.new(
-  #     instance_profile_credentials_timeout: 1,
-  #     instance_profile_credentials_retries: 5,
-  #   )
-  #   Storm.client = sqs_client
-  #
-  # @param client[Aws::SQS::Client] an instance of Aws::SQS::Client
-  def self.client=(client)
-    @client = client
-  end
-
+  # Returns a singleton of Aws::SQS::Client
   def self.client
-    @client
+    Sqewer::Connection.client
   end
 
   # Loads a particular Sqewer extension that is not loaded

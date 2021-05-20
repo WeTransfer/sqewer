@@ -43,7 +43,6 @@ class Sqewer::Connection
   def self.client
     # It's better using a singleton client to prevent making a lot of HTTP
     # requests to the AWS metadata endpoint when getting credentials.
-    # Maybe in the future, we can remove @client and use Storm.client only.
     @client ||= begin
       require 'aws-sdk-sqs'
       ::Aws::SQS::Client.new(

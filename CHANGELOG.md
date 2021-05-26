@@ -1,3 +1,7 @@
+### 8.0.0
+- Remove method `Sqewer.client=`
+- Change `Sqewer::Connection` to use a singleton SQS client by default
+
 ### 7.0.0
 - Remove support of Ruby 2.3, 2.4 and 2.5
 - Remove support of Rails 4

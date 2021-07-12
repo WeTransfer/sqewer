@@ -50,4 +50,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "dotenv"
   spec.add_development_dependency "simplecov"
   spec.add_development_dependency "appsignal", '~> 2'
+  spec.add_development_dependency "pry-byebug"
 end

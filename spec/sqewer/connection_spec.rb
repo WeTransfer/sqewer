@@ -135,8 +135,6 @@ describe Sqewer::Connection do
         :send_message_batch,
         Aws::Errors::MissingCredentialsError.new(_context = nil, _message = nil)
       )
-      # expect(fake_sqs_client).to receive(:send_message_batch)
-      #   .and_raise(Aws::Errors::MissingCredentialsError.new(_context = nil, _message = nil))
 
       conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
       expect do

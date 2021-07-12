@@ -76,6 +76,14 @@ class Sqewer::Connection
       )
       response.messages.map {|message| Message.new(message.receipt_handle, message.body, message.attributes) }
     end
+  rescue Aws::Errors::MissingCredentialsError
+    # We noticed cases where errors related to AWS credentials started to happen suddenly.
+    # We don't know the root cause yet, but what we can do is release the
+    # singleton @client instance because it contains a cache of credentials that in most
+    # cases is no longer valid.
+    self.class.release_client
+
+    raise
   end
 
   # Send a message to the backing queue
@@ -202,6 +210,12 @@ class Sqewer::Connection
     buffer.each_batch {|batch| handle_batch_with_retries(:delete_message_batch, batch) }
   end
 
+  protected
+
+  def self.release_client
+    @client = nil
+  end
+
   private
 
   def network_and_aws_sdk_errors
@@ -221,5 +235,13 @@ class Sqewer::Connection
         raise NotOurFaultAwsError
       end
     end
+  rescue Aws::Errors::MissingCredentialsError
+    # We noticed cases where errors related to AWS credentials started to happen suddenly.
+    # We don't know the root cause yet, but what we can do is release the
+    # singleton @client instance because it contains a cache of credentials that in most
+    # cases is no longer valid.
+    self.class.release_client
+
+    raise
   end
 end

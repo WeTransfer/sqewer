@@ -124,6 +124,29 @@ describe Sqewer::Connection do
 
     it 'retries on networking errors'
 
+    it 'releases the sqs singleton client when AWS raises MissingCredentialsError' do
+      # We just want to assign the singleton client to test that it was released
+      # in the end
+      old_client = described_class.client
+      expect(old_client).not_to be_nil
+
+      fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
+      fake_sqs_client.stub_responses(
+        :send_message_batch,
+        Aws::Errors::MissingCredentialsError.new(_context = nil, _message = nil)
+      )
+      # expect(fake_sqs_client).to receive(:send_message_batch)
+      #   .and_raise(Aws::Errors::MissingCredentialsError.new(_context = nil, _message = nil))
+
+      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
+      expect do
+        conn.send_multiple_messages do | b |
+          b.send_message("Hello - #{SecureRandom.uuid}")
+        end
+      end.to raise_error(Aws::Errors::MissingCredentialsError)
+
+      expect(described_class.client).not_to eq(old_client)
+    end
   end
 
   describe '#delete_message' do
@@ -203,5 +226,24 @@ describe Sqewer::Connection do
     end
 
     it 'retries on networking errors'
+
+    it 'releases the sqs singleton client when AWS raises MissingCredentialsError' do
+      # We just want to assign the singleton client to test that it was released
+      # in the end
+      old_client = described_class.client
+      expect(old_client).not_to be_nil
+
+      fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
+      fake_sqs_client.stub_responses(
+        :receive_message,
+        Aws::Errors::MissingCredentialsError.new(_context = nil, _message = nil)
+      )
+
+      expect do
+        described_class.new('https://fake-queue', client: fake_sqs_client).receive_messages
+      end.to raise_error(Aws::Errors::MissingCredentialsError)
+
+      expect(described_class.client).not_to eq(old_client)
+    end
   end
 end

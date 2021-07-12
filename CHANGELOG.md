@@ -1,3 +1,6 @@
+### 8.0.1
+- Release the singleton SQS client when AWS raises credentials error to be able to use a new credential next time
+
 ### 8.0.0
 - Remove method `Sqewer.client=`
 - Change `Sqewer::Connection` to use a singleton SQS client by default

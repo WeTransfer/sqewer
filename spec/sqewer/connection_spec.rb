@@ -124,26 +124,31 @@ describe Sqewer::Connection do
 
     it 'retries on networking errors'
 
-    it 'releases the sqs singleton client when AWS raises MissingCredentialsError' do
-      # We just want to assign the singleton client to test that it was released
-      # in the end
-      old_client = described_class.client
-      expect(old_client).not_to be_nil
+    [
+      Aws::Errors::MissingCredentialsError,
+      Aws::SQS::Errors::AccessDenied,
+    ].each do |error_class|
+      it "releases the sqs singleton client when AWS raises #{error_class}" do
+        # We just want to assign the singleton client to test that it was released
+        # in the end
+        old_client = described_class.client
+        expect(old_client).not_to be_nil
 
-      fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
-      fake_sqs_client.stub_responses(
-        :send_message_batch,
-        Aws::Errors::MissingCredentialsError.new(_context = nil, _message = nil)
-      )
+        fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
+        fake_sqs_client.stub_responses(
+          :send_message_batch,
+          error_class.new(_context = nil, _message = nil)
+        )
 
-      conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
-      expect do
-        conn.send_multiple_messages do | b |
-          b.send_message("Hello - #{SecureRandom.uuid}")
-        end
-      end.to raise_error(Aws::Errors::MissingCredentialsError)
+        conn = described_class.new('https://fake-queue.com', client: fake_sqs_client)
+        expect do
+          conn.send_multiple_messages do | b |
+            b.send_message("Hello - #{SecureRandom.uuid}")
+          end
+        end.to raise_error(error_class)
 
-      expect(described_class.client).not_to eq(old_client)
+        expect(described_class.client).not_to eq(old_client)
+      end
     end
   end
 
@@ -225,23 +230,28 @@ describe Sqewer::Connection do
 
     it 'retries on networking errors'
 
-    it 'releases the sqs singleton client when AWS raises MissingCredentialsError' do
-      # We just want to assign the singleton client to test that it was released
-      # in the end
-      old_client = described_class.client
-      expect(old_client).not_to be_nil
+    [
+      Aws::Errors::MissingCredentialsError,
+      Aws::SQS::Errors::AccessDenied,
+    ].each do |error_class|
+      it "releases the sqs singleton client when AWS raises #{error_class}" do
+        # We just want to assign the singleton client to test that it was released
+        # in the end
+        old_client = described_class.client
+        expect(old_client).not_to be_nil
 
-      fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
-      fake_sqs_client.stub_responses(
-        :receive_message,
-        Aws::Errors::MissingCredentialsError.new(_context = nil, _message = nil)
-      )
+        fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
+        fake_sqs_client.stub_responses(
+          :receive_message,
+          error_class.new(_context = nil, _message = nil)
+        )
 
-      expect do
-        described_class.new('https://fake-queue', client: fake_sqs_client).receive_messages
-      end.to raise_error(Aws::Errors::MissingCredentialsError)
+        expect do
+          described_class.new('https://fake-queue', client: fake_sqs_client).receive_messages
+        end.to raise_error(error_class)
 
-      expect(described_class.client).not_to eq(old_client)
+        expect(described_class.client).not_to eq(old_client)
+      end
     end
   end
 end

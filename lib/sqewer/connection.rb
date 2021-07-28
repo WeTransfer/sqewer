@@ -13,6 +13,11 @@ class Sqewer::Connection
 
   NotOurFaultAwsError = Class.new(Sqewer::Error)
 
+  SQS_ERRORS_TO_RELEASE_CLIENT = [
+    Aws::Errors::MissingCredentialsError,
+    Aws::SQS::Errors::AccessDenied,
+  ]
+
   # A wrapper for most important properties of the received message
   class Message < Struct.new(:receipt_handle, :body, :attributes)
     def inspect
@@ -76,7 +81,7 @@ class Sqewer::Connection
       )
       response.messages.map {|message| Message.new(message.receipt_handle, message.body, message.attributes) }
     end
-  rescue Aws::Errors::MissingCredentialsError
+  rescue *SQS_ERRORS_TO_RELEASE_CLIENT
     # We noticed cases where errors related to AWS credentials started to happen suddenly.
     # We don't know the root cause yet, but what we can do is release the
     # singleton @client instance because it contains a cache of credentials that in most
@@ -235,7 +240,7 @@ class Sqewer::Connection
         raise NotOurFaultAwsError
       end
     end
-  rescue Aws::Errors::MissingCredentialsError
+  rescue *SQS_ERRORS_TO_RELEASE_CLIENT
     # We noticed cases where errors related to AWS credentials started to happen suddenly.
     # We don't know the root cause yet, but what we can do is release the
     # singleton @client instance because it contains a cache of credentials that in most

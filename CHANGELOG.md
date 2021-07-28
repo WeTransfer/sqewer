@@ -1,3 +1,6 @@
+### 8.0.2
+- Add `Aws::SQS::Errors::AccessDenied` to the list of errors that Sqewer must release the singleton SQS client
+
 ### 8.0.1
 - Release the singleton SQS client when AWS raises credentials error to be able to use a new credential next time
 

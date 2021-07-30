@@ -125,14 +125,17 @@ describe Sqewer::Connection do
     it 'retries on networking errors'
 
     [
-      Aws::Errors::MissingCredentialsError,
-      Aws::SQS::Errors::AccessDenied,
-    ].each do |error_class|
-      it "releases the sqs singleton client when AWS raises #{error_class}" do
+      'Aws::Errors::MissingCredentialsError',
+      'Aws::SQS::Errors::AccessDenied',
+    ].each do |error_class_name|
+      it "releases the sqs singleton client when AWS raises #{error_class_name}" do
         # We just want to assign the singleton client to test that it was released
         # in the end
         old_client = described_class.client
         expect(old_client).not_to be_nil
+
+        # aws-sdk-sqs is loaded only after the method `.client`
+        error_class = Object.const_get(error_class_name)
 
         fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
         fake_sqs_client.stub_responses(
@@ -231,14 +234,17 @@ describe Sqewer::Connection do
     it 'retries on networking errors'
 
     [
-      Aws::Errors::MissingCredentialsError,
-      Aws::SQS::Errors::AccessDenied,
-    ].each do |error_class|
-      it "releases the sqs singleton client when AWS raises #{error_class}" do
+      'Aws::Errors::MissingCredentialsError',
+      'Aws::SQS::Errors::AccessDenied',
+    ].each do |error_class_name|
+      it "releases the sqs singleton client when AWS raises #{error_class_name}" do
         # We just want to assign the singleton client to test that it was released
         # in the end
         old_client = described_class.client
         expect(old_client).not_to be_nil
+
+        # aws-sdk-sqs is loaded only after the method `.client`
+        error_class = Object.const_get(error_class_name)
 
         fake_sqs_client = Aws::SQS::Client.new(stub_responses: true)
         fake_sqs_client.stub_responses(

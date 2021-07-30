@@ -1,3 +1,6 @@
+### 8.0.3
+- Fix `Sqewer::Connection` to properly get the list of AWS errors
+
 ### 8.0.2
 - Add `Aws::SQS::Errors::AccessDenied` to the list of errors that Sqewer must release the singleton SQS client
 

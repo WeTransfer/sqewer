@@ -245,9 +245,6 @@ class Sqewer::Connection
     raise
   end
 
-  # We tried to define this list using a constant in the class, but it's not
-  # possible because aws-sqs-sdk is loaded only during runtime, when
-  # SQS_QUEUE_URL doesn't use Sqlite
   def sqs_errors_to_release_client
     [
       Aws::Errors::MissingCredentialsError,

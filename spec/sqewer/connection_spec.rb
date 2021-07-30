@@ -4,13 +4,19 @@ describe Sqewer::Connection do
   describe '.default' do
     it 'returns a new LocalConnection if SQS_QUEUE_URL references sqlite:// as proto' do
       tf = Tempfile.new('sqlite-db')
-      expect(ENV).to receive(:fetch).with('SQS_QUEUE_URL').and_return('sqlite3://' + tf.path)
+      stub_const('ENV', ENV.to_h.merge(
+        'SQS_QUEUE_URL' => 'sqlite3://' + tf.path,
+      ))
+
       default = described_class.default
       expect(default).to be_kind_of(Sqewer::LocalConnection)
     end
 
     it 'returns a new Connection with the SQS queue location picked from SQS_QUEUE_URL envvar' do
-      expect(ENV).to receive(:fetch).with('SQS_QUEUE_URL').and_return('https://aws-fake-queue.com')
+      stub_const('ENV', ENV.to_h.merge(
+        'SQS_QUEUE_URL' => 'https://aws-fake-queue.com',
+      ))
+
       default = described_class.default
       expect(default).to be_kind_of(described_class)
     end

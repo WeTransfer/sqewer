@@ -13,11 +13,6 @@ class Sqewer::Connection
 
   NotOurFaultAwsError = Class.new(Sqewer::Error)
 
-  SQS_ERRORS_TO_RELEASE_CLIENT = [
-    Aws::Errors::MissingCredentialsError,
-    Aws::SQS::Errors::AccessDenied,
-  ]
-
   # A wrapper for most important properties of the received message
   class Message < Struct.new(:receipt_handle, :body, :attributes)
     def inspect
@@ -81,7 +76,7 @@ class Sqewer::Connection
       )
       response.messages.map {|message| Message.new(message.receipt_handle, message.body, message.attributes) }
     end
-  rescue *SQS_ERRORS_TO_RELEASE_CLIENT
+  rescue *sqs_errors_to_release_client
     # We noticed cases where errors related to AWS credentials started to happen suddenly.
     # We don't know the root cause yet, but what we can do is release the
     # singleton @client instance because it contains a cache of credentials that in most
@@ -240,7 +235,7 @@ class Sqewer::Connection
         raise NotOurFaultAwsError
       end
     end
-  rescue *SQS_ERRORS_TO_RELEASE_CLIENT
+  rescue *sqs_errors_to_release_client
     # We noticed cases where errors related to AWS credentials started to happen suddenly.
     # We don't know the root cause yet, but what we can do is release the
     # singleton @client instance because it contains a cache of credentials that in most
@@ -248,5 +243,15 @@ class Sqewer::Connection
     self.class.release_client
 
     raise
+  end
+
+  # We tried to define this list using a constant in the class, but it's not
+  # possible because aws-sqs-sdk is loaded only during runtime, when
+  # SQS_QUEUE_URL doesn't use Sqlite
+  def sqs_errors_to_release_client
+    [
+      Aws::Errors::MissingCredentialsError,
+      Aws::SQS::Errors::AccessDenied,
+    ]
   end
 end

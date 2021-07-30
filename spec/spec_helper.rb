@@ -3,7 +3,6 @@ $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
 require 'rspec'
 require 'rspec/wait'
 require 'dotenv'
-require 'aws-sdk-sqs'
 require 'simplecov'
 require 'securerandom'
 Dotenv.load

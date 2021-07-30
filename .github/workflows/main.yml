@@ -15,7 +15,7 @@ jobs:
           - gemfiles/Gemfile.rails-5.0.x
           - gemfiles/Gemfile.rails-5.1.x
     env:
-      AWS_REGION: 'eu-central-1'
+      SQS_QUEUE_URL: 'sqlite3://tmp/sqewer.sqlite3'
     steps:
     - uses: actions/checkout@v2
     - name: Set up Ruby
@@ -24,6 +24,7 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
     - name: install gems
       run: |
+        gem install sqlite3
         gem install bundler
         bundle install --gemfile ${{ matrix.gemfile }}
     - name: Tests

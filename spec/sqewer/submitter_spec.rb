@@ -3,7 +3,9 @@ require_relative '../spec_helper'
 describe Sqewer::Submitter do
   describe '.default' do
     it 'returns a set up Submitter with the configured Connection and Serializer' do
-      expect(ENV).to receive(:fetch).with('SQS_QUEUE_URL').and_return('https://some-queue.aws.com')
+      stub_const('ENV', ENV.to_h.merge(
+        'SQS_QUEUE_URL' => 'https://some-queue.aws.com',
+      ))
 
       s = described_class.default
       expect(s.connection).to respond_to(:send_message)

@@ -133,9 +133,9 @@ include all the keyword arguments needed to instantiate the job when executing. 
       end
     end
 
-Or if you are using `ks` gem (https://rubygems.org/gems/ks) you could inherit your Job from it:
+Or if you are using simple Struct you could inherit your Job from it:
 
-    class SendMail < Ks.strict(:to, :body)
+    class SendMail < Struct.new(:to, :body, keyword_init: true)
       def run
         ...
       end

@@ -1,3 +1,7 @@
+### 8.1.0
+- dropped dependency on `ks` gem
+- added rails6 and ruby3/3.1 to test matrix
+
 ### 8.0.3
 - Fix `Sqewer::Connection` to properly get the list of AWS errors
 

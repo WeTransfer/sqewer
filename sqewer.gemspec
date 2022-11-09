@@ -33,7 +33,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "aws-sdk-sqs", "~> 1"
   spec.add_runtime_dependency "rack"
   spec.add_runtime_dependency "very_tiny_state_machine"
-  spec.add_runtime_dependency "ks"
   spec.add_runtime_dependency "retriable"
 
   spec.add_development_dependency "bundler"
@@ -49,6 +48,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "sqlite3"
   spec.add_development_dependency "dotenv"
   spec.add_development_dependency "simplecov"
+  spec.add_development_dependency "nokogiri"
   spec.add_development_dependency "appsignal", '~> 2'
   spec.add_development_dependency "pry-byebug"
 end

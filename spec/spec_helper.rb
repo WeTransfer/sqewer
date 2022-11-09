@@ -5,12 +5,13 @@ require 'rspec/wait'
 require 'dotenv'
 require 'simplecov'
 require 'securerandom'
+require 'aws-sdk-sqs'
 Dotenv.load
 
 SimpleCov.start
 require 'sqewer'
 
-RSpec.configure do |config| 
+RSpec.configure do |config|
   config.order = 'random'
   config.around :each do | example |
     if example.metadata[:sqs]
@@ -18,14 +19,14 @@ RSpec.configure do |config|
       client = Aws::SQS::Client.new
       resp = client.create_queue(queue_name: queue_name)
       ENV['SQS_QUEUE_URL'] = resp.queue_url
-      
+
       example.run
-      
+
       # Sometimes the queue is already deleted before the example completes. If the test has passed,
       # we do not really care whether this invocation raises an exception about a non-existent queue since
       # all we care about is the queue _being gone_ at the end of the example.
       client.delete_queue(queue_url: ENV.fetch('SQS_QUEUE_URL')) rescue Aws::SQS::Errors::NonExistentQueue
-      
+
       ENV.delete('SQS_QUEUE_URL')
     else
       example.run

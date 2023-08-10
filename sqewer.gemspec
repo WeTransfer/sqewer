@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Process jobs from SQS}
   spec.description   = %q{A full-featured library for all them SQS worker needs}
   spec.homepage      = "https://github.com/WeTransfer/sqewer"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the "allowed_push_host"
   # to allow pushing to a single host or delete this section to allow pushing to any host.

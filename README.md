@@ -48,7 +48,7 @@ The messages will only be deleted from SQS once the job execution completes with
 
 ## Requirements
 
-Ruby 2.6+, version 2 of the AWS SDK. You can also run Sqewer backed by a SQLite database file, which can be handy for development situations.
+Ruby 3+, version 2 of the AWS SDK. You can also run Sqewer backed by a SQLite database file, which can be handy for development situations.
 
 ## Job storage
 
@@ -415,4 +415,3 @@ the Ruby standard library alone.
 ## Copyright
 
 Copyright (c) 2016 WeTransfer. See LICENSE.txt for further details.
-

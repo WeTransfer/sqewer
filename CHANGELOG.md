@@ -1,3 +1,7 @@
+### 9.0.0
+- Add support for Ruby 3.2 and Rails 7
+- Remove support for Ruby 2.6, 2.7 and Rails 5 and 6.0
+
 ### 8.1.0
 - dropped dependency on `ks` gem
 - added rails6 and ruby3/3.1 to test matrix

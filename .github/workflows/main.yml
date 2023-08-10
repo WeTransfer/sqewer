@@ -14,9 +14,8 @@ jobs:
           - 2.7
           - 2.6
         gemfile:
-          - gemfiles/Gemfile.rails-5.0.x
-          - gemfiles/Gemfile.rails-5.1.x
-          - gemfiles/Gemfile.rails-6.0.x
+          - gemfiles/Gemfile.rails-6.1.x
+          - gemfiles/Gemfile.rails-7.0.x
     env:
       SQS_QUEUE_URL: 'sqlite3://tmp/sqewer.sqlite3'
       AWS_REGION: 'eu-central-1'

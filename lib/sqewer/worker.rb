@@ -89,6 +89,10 @@ class Sqewer::Worker
     @logger.info { '[worker] Starting with %d consumer threads' % @num_threads }
     @execution_queue = Queue.new
 
+    # Ensure that unhandled exceptions inside threads make the worker fail,
+    # to avoid silent failures with no consumer threads running.
+    Thread.abort_on_exception = true
+
     consumers = (1..@num_threads).map do
       Thread.new do
         loop { take_and_execute }

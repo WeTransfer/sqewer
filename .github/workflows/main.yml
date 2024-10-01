@@ -26,7 +26,7 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
     - name: install gems
       run: |
-        gem install sqlite3
+        gem install sqlite3 -v '~> 1.0'
         gem install bundler
         bundle install --gemfile ${{ matrix.gemfile }}
     - name: Tests

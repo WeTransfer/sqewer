@@ -89,8 +89,14 @@ class Sqewer::Worker
     @logger.info { '[worker] Starting with %d consumer threads' % @num_threads }
     @execution_queue = Queue.new
 
-    consumers = (1..@num_threads).map do
+    # Ensure that unhandled exceptions inside threads make the worker fail,
+    # to avoid silent failures with no consumer threads running.
+    Thread.abort_on_exception = true
+
+    consumers = (1..@num_threads).each_with_index.map do |_, index|
       Thread.new do
+        Thread.current[:role] = :consumer
+        Thread.current[:id] = index
         loop { take_and_execute }
       end
     end
@@ -99,6 +105,7 @@ class Sqewer::Worker
     # grab new messages and place them on the local queue.
     owning_worker = self # self won't be self anymore in the thread
     provider = Thread.new do
+      Thread.current[:role] = :provider
       loop do
         begin
           break if stopping?

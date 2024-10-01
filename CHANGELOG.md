@@ -1,3 +1,6 @@
+### 10.0.0
+- Ensure all worker threads exit if a thread dies in case of an unhandled exception, to avoid "zombie" workers (running without any consumer thread)
+
 ### 9.0.0
 - Add support for Ruby 3.2 and Rails 7
 - Remove support for Ruby 2.6, 2.7 and Rails 5 and 6.0

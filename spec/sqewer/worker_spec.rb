@@ -141,4 +141,40 @@ describe Sqewer::Worker, :sqs => true do
       end
     end
   end
+
+  context 'when a worker thread raises an exception' do
+    it 'kills all threads and stops the worker' do
+      fake_conn = double('bad connection')
+      allow(fake_conn).to receive(:receive_messages) do
+        if Thread.current[:raise_exception] # only raise in one specific thread
+          raise 'thread failure'
+        else
+          sleep 5 # normal operation
+        end
+      end
+  
+      log_device = StringIO.new('')
+      worker = described_class.new(logger: Logger.new(log_device), connection: fake_conn, num_threads: 4)
+  
+      # wrap the Thread.new method to mark the first thread to raise an exception
+      allow(Thread).to receive(:new).and_wrap_original do |original, *args, &block|
+        thread = original.call(*args, &block)
+        if worker.threads.empty?
+          thread[:raise_exception] = true # mark only the first thread to raise an exception
+        end
+        thread
+      end
+
+      expect(worker).to receive(:stop).at_least(:once)
+  
+      worker.start
+      sleep 4
+      expect(worker.threads).to all(satisfy { |t| !t.alive? })
+      wait_for {
+        log_device.string
+      }.to include('thread failure')
+  
+      worker.stop
+    end
+  end
 end

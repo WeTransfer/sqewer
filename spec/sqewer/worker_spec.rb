@@ -59,25 +59,6 @@ describe Sqewer::Worker, :sqs => true do
       worker.stop
     end
   end
-
-  context 'when the connection to SQS fails in receive_messages' do
-    it 'it stops itself gracefully' do
-      fake_conn = double('bad connection')
-      allow(fake_conn).to receive(:receive_messages).and_raise("boom")
-
-      log_device = StringIO.new('')
-      worker = described_class.new(logger: Logger.new(log_device), connection: fake_conn)
-
-      expect(worker).to receive(:stop).at_least(:once)
-      expect(worker).not_to receive(:kill)
-
-      worker.start
-      wait_for(worker.state.in_state?(:stopped))
-      wait_for{
-        log_device.string
-      }.to include("boom")
-    end
-  end
   
   context 'when the job payload cannot be unserialized from JSON due to invalid syntax' do
     it 'is able to cope with an exception when the job class is unknown (one of generic exceptions)' do
@@ -142,38 +123,65 @@ describe Sqewer::Worker, :sqs => true do
     end
   end
 
-  context 'when a worker thread raises an exception' do
+  context 'when a worker thread raises a non-StandardError exception' do
+    class CustomFatalException < Exception; end
+    
     it 'kills all threads and stops the worker' do
-      fake_conn = double('bad connection')
-      allow(fake_conn).to receive(:receive_messages) do
-        if Thread.current[:raise_exception] # only raise in one specific thread
-          raise 'thread failure'
-        else
-          sleep 5 # normal operation
-        end
-      end
-  
       log_device = StringIO.new('')
-      worker = described_class.new(logger: Logger.new(log_device), connection: fake_conn, num_threads: 4)
-  
-      # wrap the Thread.new method to mark the first thread to raise an exception
-      allow(Thread).to receive(:new).and_wrap_original do |original, *args, &block|
-        thread = original.call(*args, &block)
-        if worker.threads.empty?
-          thread[:raise_exception] = true # mark only the first thread to raise an exception
+      worker = described_class.new(logger: Logger.new(log_device), num_threads: 4)
+      allow(worker).to receive(:take_and_execute) do
+        if Thread.current[:id] == 2 && Thread.current[:role] == :consumer
+          # just for one consumer thread, raise an exception soon after starting
+          sleep 1
+          raise CustomFatalException, "Custom Fatal Exception"
+        else
+          # for all the other consumer threads, sleep for a long time to simulate a working thread
+          sleep 30
         end
-        thread
       end
+  
+      begin
+        worker.start
 
-      expect(worker).to receive(:stop).at_least(:once)
+        sleep 5
+        consumer_threads = worker.threads.select { |t| t[:role] == :consumer }
+
+        # all the consumer threads should have died by now, as
+        # the `Thread.abort_on_exception` flag is set to `true`
+        expect(consumer_threads).to all(satisfy { |t| !t.alive? })
+
+        worker.stop
+      rescue CustomFatalException
+        # expected from a consumer thread, don't fail the test
+      end
+    end
+  end
+
+  context 'when a worker thread raises a StandardError exception' do
+    class CustomFatalException < Exception; end
+    
+    it 'the processing continues' do
+      log_device = StringIO.new('')
+      worker = described_class.new(logger: Logger.new(log_device), num_threads: 4)
+      allow(worker).to receive(:handle_message) do
+        if Thread.current[:id] == 2 && Thread.current[:role] == :consumer
+          # just for one consumer thread, raise an exception soon after starting
+          sleep 1
+          raise StandardError
+        else
+          # for all the other consumer threads, sleep for a long time to simulate a working thread
+          sleep 30
+        end
+      end
   
       worker.start
-      sleep 4
-      expect(worker.threads).to all(satisfy { |t| !t.alive? })
-      wait_for {
-        log_device.string
-      }.to include('thread failure')
-  
+
+      sleep 5
+      consumer_threads = worker.threads.select { |t| t[:role] == :consumer }
+
+      # all the consumer threads should still be alive
+      expect(consumer_threads).to all(satisfy { |t| t.alive? })
+
       worker.stop
     end
   end

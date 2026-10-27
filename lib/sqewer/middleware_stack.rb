@@ -15,7 +15,7 @@ class Sqewer::MiddlewareStack
 
   # Adds a handler. The handler should respond to :around_deserialization and #around_execution.
   #
-  # @param handler[#around_deserializarion, #around_execution] The middleware item to insert
+  # @param handler[#around_deserialization, #around_execution] The middleware item to insert
   # @return [void]
   def <<(handler)
     @handlers << handler

@@ -1,5 +1,5 @@
 $stdout.sync = true
-# Wraps a Worker object in a process-wide commanline handler. Once the `start` method is
+# Wraps a Worker object in a process-wide commandline handler. Once the `start` method is
 # called, signal handlers will be installed for the following signals:
 #
 # * `TERM`, `USR1` - will soft-terminate the worker (let all the threads complete and die)

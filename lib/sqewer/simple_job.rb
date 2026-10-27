@@ -27,7 +27,7 @@ module Sqewer::SimpleJob
     methods.grep(EQ_END).map{|e| e.to_s.gsub(EQ_END, '\1')}.map(&:to_sym)
   end
 
-  # Returns the inspection string with the job and all of it's instantiation keyword attributes.
+  # Returns the inspection string with the job and all of its instantiation keyword attributes.
   # If `inspectable_attributes` has been overridden, the attributes returned by that method will be the
   # ones returned in the inspection string.
   #

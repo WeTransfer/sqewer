@@ -25,7 +25,7 @@ class Sqewer::ConnectionMessagebox
   end
 
   # Saves the given body and the keyword arguments (such as delay_seconds) to be sent into the queue.
-  # If there are more sends in the same flush, they will be batched using batched deletes.G
+  # If there are more sends in the same flush, they will be batched using batched deletes.
   #
   # @see {Connection#send_message}
   def send_message(message_body, **kwargs_for_send)

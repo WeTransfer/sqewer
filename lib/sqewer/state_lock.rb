@@ -1,7 +1,7 @@
 require 'delegate'
 require 'thread'
 
-# Controls the state of the Worker object, and wraps it's state transitions
+# Controls the state of the Worker object, and wraps its state transitions
 # with a Mutex.
 class Sqewer::StateLock < SimpleDelegator
   def initialize

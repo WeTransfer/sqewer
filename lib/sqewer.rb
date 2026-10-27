@@ -35,6 +35,6 @@ module Sqewer
   # If we are within Rails, load the railtie
   require_relative 'sqewer/extensions/railtie' if defined?(Rails)
 
-  # Explicitly require retriable so that it ia available for use.
+  # Explicitly require retriable so that it is available for use.
   require 'retriable'
 end

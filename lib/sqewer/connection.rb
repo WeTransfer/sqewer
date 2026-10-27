@@ -191,7 +191,7 @@ class Sqewer::Connection
     buffer.each_batch {|batch| handle_batch_with_retries(:send_message_batch, batch) }
   end
 
-  # Deletes a message after it has been succesfully decoded and processed
+  # Deletes a message after it has been successfully decoded and processed
   #
   # @param message_identifier[String] the ID of the message to delete. For SQS, it is the receipt handle
   # @return [void]
@@ -199,7 +199,7 @@ class Sqewer::Connection
     delete_multiple_messages {|via| via.delete_message(message_identifier) }
   end
 
-  # Deletes multiple messages after they all have been succesfully decoded and processed.
+  # Deletes multiple messages after they all have been successfully decoded and processed.
   #
   # @yield [#delete_message] an object you can delete an individual message through
   # @return [void]

@@ -55,7 +55,7 @@ class Sqewer::LocalConnection < Sqewer::Connection
     persist_messages(messages)
   end
 
-  # Deletes multiple messages after they all have been succesfully decoded and processed.
+  # Deletes multiple messages after they all have been successfully decoded and processed.
   #
   # @yield [#delete_message] an object you can delete an individual message through
   # @return [void]
